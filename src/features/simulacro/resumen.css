@@ -1,0 +1,56 @@
+.resumen-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.resumen-puntaje {
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.resumen-subtitulo {
+  margin: 4px 0 32px;
+}
+
+.resumen-conteos {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.resumen-conteos div {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen-conteos strong {
+  font-size: 24px;
+}
+
+.resumen-conteos span {
+  font-size: 13px;
+}
+
+.resumen-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+.resumen-tabla th,
+.resumen-tabla td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.resumen-volver {
+  color: var(--accent);
+  font-weight: 500;
+}

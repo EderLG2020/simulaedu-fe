@@ -1,0 +1,175 @@
+.simulacro-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.simulacro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.simulacro-timer {
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.simulacro-acciones-header {
+  display: flex;
+  gap: 8px;
+}
+
+.simulacro-acciones-header button {
+  font: inherit;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.simulacro-finalizar {
+  color: #fff !important;
+  background: var(--accent) !important;
+  border: none !important;
+}
+
+.simulacro-error {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  font-size: 14px;
+}
+
+.simulacro-navegacion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.simulacro-nav-item {
+  width: 32px;
+  height: 32px;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.simulacro-nav-item.activa {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.simulacro-nav-item.respondida {
+  background: var(--code-bg);
+}
+
+.simulacro-nav-item.marcada {
+  /* color distinto al de .activa (accent) para que ambos estados sigan
+     distinguiéndose cuando coinciden en la misma pregunta */
+  box-shadow: inset 0 0 0 2px #e8a33d;
+}
+
+.simulacro-nav-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.simulacro-marcadas {
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.simulacro-pregunta {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.simulacro-pregunta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.simulacro-pregunta-header button {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.simulacro-enunciado {
+  margin-bottom: 16px;
+}
+
+.simulacro-alternativas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.simulacro-alternativa {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.simulacro-input-numerico {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  margin-bottom: 20px;
+  width: 160px;
+}
+
+.simulacro-no-soportado {
+  font-size: 14px;
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+.simulacro-pregunta-nav {
+  display: flex;
+  justify-content: space-between;
+}
+
+.simulacro-pregunta-nav button {
+  font: inherit;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.simulacro-pregunta-nav button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
