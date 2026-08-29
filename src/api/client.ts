@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/authStore'
+
 const BASE_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1'
 
 export interface ApiErrorDetail {
@@ -29,13 +31,22 @@ interface ApiErrorEnvelope {
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const accessToken = useAuthStore.getState().accessToken
+
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options.headers,
     },
   })
+
+  // Sesion vencida o token invalido: no tiene sentido conservar una sesion
+  // que el backend ya no reconoce, se limpia para que la UI vuelva a /login.
+  if (response.status === 401 && accessToken) {
+    useAuthStore.getState().cerrarSesion()
+  }
 
   const body = await response.json()
 
