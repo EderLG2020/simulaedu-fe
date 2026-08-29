@@ -11,9 +11,12 @@ function App() {
       {estaAutenticado && usuario ? (
         <>
           <p>Hola, {usuario.nombre}.</p>
-          <button type="button" onClick={cerrarSesion}>
-            Cerrar sesion
-          </button>
+          <div className="home-actions">
+            <Link to="/examenes">Ver examenes disponibles</Link>
+            <button type="button" onClick={cerrarSesion}>
+              Cerrar sesion
+            </button>
+          </div>
         </>
       ) : (
         <div className="home-actions">

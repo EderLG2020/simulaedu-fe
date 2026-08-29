@@ -15,7 +15,10 @@
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  /* line-height como razon (no %): un % se resuelve a un largo fijo en :root
+     y ESE largo fijo es lo que heredan los descendientes, no la razon -
+     un h1 mas grande que 18px*1.45px terminaria con lineas superpuestas. */
+  font: 18px/1.45 var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);

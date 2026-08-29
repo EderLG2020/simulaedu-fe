@@ -1,0 +1,76 @@
+.examenes-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.examenes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.examenes-cerrar-sesion {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.examenes-error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  font-size: 14px;
+}
+
+.examenes-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.examen-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.examen-item h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.examen-meta {
+  margin: 0;
+  font-size: 14px;
+}
+
+.examen-iniciar {
+  flex-shrink: 0;
+  font: inherit;
+  font-weight: 500;
+  padding: 10px 16px;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.examen-iniciar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
