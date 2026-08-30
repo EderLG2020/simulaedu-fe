@@ -3,7 +3,9 @@ import App from './App'
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
 import CoordinadorPage from './features/coordinador/CoordinadorPage'
+import ExamenEstadisticasPage from './features/docente/ExamenEstadisticasPage'
 import GrupoDetallePage from './features/docente/GrupoDetallePage'
+import GrupoEstadisticasPage from './features/docente/GrupoEstadisticasPage'
 import GruposPage from './features/docente/GruposPage'
 import RevisionesPage from './features/docente/RevisionesPage'
 import ExamenesDisponiblesPage from './features/examenes/ExamenesDisponiblesPage'
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
         children: [
           { path: '/docente/grupos', element: <GruposPage /> },
           { path: '/docente/grupos/:id', element: <GrupoDetallePage /> },
+          { path: '/docente/grupos/:id/estadisticas', element: <GrupoEstadisticasPage /> },
+          { path: '/docente/examenes/:examenId/estadisticas', element: <ExamenEstadisticasPage /> },
           { path: '/docente/revisiones', element: <RevisionesPage /> },
         ],
       },
