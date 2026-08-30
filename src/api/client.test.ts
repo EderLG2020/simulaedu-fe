@@ -69,6 +69,13 @@ describe('apiFetch', () => {
     })
   })
 
+  it('devuelve undefined en una respuesta 204 sin cuerpo (ej. DELETE)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204, json: async () => { throw new Error('sin cuerpo') } })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(apiFetch('/coordinador/alumnos/x/licencia', { method: 'DELETE' })).resolves.toBeUndefined()
+  })
+
   it('limpia la sesion cuando el backend responde 401 a una llamada autenticada', async () => {
     useAuthStore.getState().setSesion('token-vencido', usuario)
     mockFetchOnce(401, { error: { code: 'NO_AUTORIZADO', message: 'Token invalido', details: [] } })
