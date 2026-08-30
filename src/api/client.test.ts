@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { apiFetch, ApiError } from './client'
+import { apiFetch, apiFetchPagina, ApiError } from './client'
 import { useAuthStore } from '../stores/authStore'
 import type { Usuario } from './authApi'
 
@@ -74,6 +74,15 @@ describe('apiFetch', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(apiFetch('/coordinador/alumnos/x/licencia', { method: 'DELETE' })).resolves.toBeUndefined()
+  })
+
+  it('apiFetchPagina conserva data y meta de un envelope paginado', async () => {
+    mockFetchOnce(200, { data: [{ id: 'a' }], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } })
+
+    const resultado = await apiFetchPagina<{ id: string }>('/admin/usuarios')
+
+    expect(resultado.data).toEqual([{ id: 'a' }])
+    expect(resultado.meta).toEqual({ page: 1, limit: 20, total: 1, totalPages: 1 })
   })
 
   it('limpia la sesion cuando el backend responde 401 a una llamada autenticada', async () => {

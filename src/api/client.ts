@@ -30,7 +30,19 @@ interface ApiErrorEnvelope {
   }
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+export interface PageMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface ApiPageEnvelope<T> {
+  data: T[]
+  meta: PageMeta
+}
+
+async function realizarPeticion(path: string, options: RequestInit): Promise<unknown> {
   const accessToken = useAuthStore.getState().accessToken
 
   const response = await fetch(`${BASE_URL}${path}`, {
@@ -50,7 +62,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   // 204 No Content (ej. DELETE): no hay cuerpo que parsear como JSON.
   if (response.status === 204) {
-    return undefined as T
+    return undefined
   }
 
   const body = await response.json()
@@ -60,5 +72,17 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     throw new ApiError(error.code, error.message, error.details)
   }
 
+  return body
+}
+
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const body = await realizarPeticion(path, options)
+  if (body === undefined) return undefined as T
   return (body as ApiSuccessEnvelope<T>).data
+}
+
+/** Para endpoints paginados (ApiPageResponse en el backend) - conserva `meta` en vez de devolver solo `data`. */
+export async function apiFetchPagina<T>(path: string, options: RequestInit = {}): Promise<ApiPageEnvelope<T>> {
+  const body = await realizarPeticion(path, options)
+  return body as ApiPageEnvelope<T>
 }
