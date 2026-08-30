@@ -21,3 +21,8 @@ export interface ExamenResumen {
 export function listarExamenesPublicados(): Promise<ExamenResumen[]> {
   return apiFetch<ExamenResumen[]>('/examenes?estado=PUBLICADO&limit=50')
 }
+
+/** Examenes publicados propios de un docente - para elegir cual asignarle a un grupo. */
+export function listarMisExamenesPublicados(autorId: string): Promise<ExamenResumen[]> {
+  return apiFetch<ExamenResumen[]>(`/examenes?estado=PUBLICADO&autorId=${autorId}&limit=50`)
+}
