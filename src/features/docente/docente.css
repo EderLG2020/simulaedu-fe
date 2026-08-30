@@ -1,0 +1,168 @@
+.docente-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.docente-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.docente-volver {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.docente-cerrar-sesion {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.docente-error {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  font-size: 14px;
+}
+
+.docente-crear-grupo,
+.docente-buscar-alumno {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.docente-crear-grupo input,
+.docente-buscar-alumno input {
+  flex: 1;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.docente-lista {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.docente-grupo,
+.docente-alumno,
+.docente-asignacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.docente-grupo-link {
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.docente-grupo-link h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.docente-grupo-link p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.docente-alumno-nombre {
+  margin: 0 0 4px;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.docente-alumno-email {
+  margin: 0;
+  font-size: 14px;
+}
+
+.docente-seccion {
+  margin-bottom: 32px;
+}
+
+.docente-asignar-examen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.docente-asignar-examen select,
+.docente-asignar-examen input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.docente-asignar-examen label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.docente-crear-grupo button,
+.docente-buscar-alumno button,
+.docente-asignar-examen button,
+.docente-agregar,
+.docente-eliminar {
+  flex-shrink: 0;
+  font: inherit;
+  font-weight: 500;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.docente-crear-grupo button,
+.docente-buscar-alumno button,
+.docente-asignar-examen button,
+.docente-agregar {
+  color: #fff;
+  background: var(--accent);
+}
+
+.docente-eliminar {
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.docente-crear-grupo button:disabled,
+.docente-buscar-alumno button:disabled,
+.docente-asignar-examen button:disabled,
+.docente-agregar:disabled,
+.docente-eliminar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -3,6 +3,8 @@ import App from './App'
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
 import CoordinadorPage from './features/coordinador/CoordinadorPage'
+import GrupoDetallePage from './features/docente/GrupoDetallePage'
+import GruposPage from './features/docente/GruposPage'
 import ExamenesDisponiblesPage from './features/examenes/ExamenesDisponiblesPage'
 import ResumenSimulacroPage from './features/simulacro/ResumenSimulacroPage'
 import SimulacroPage from './features/simulacro/SimulacroPage'
@@ -22,6 +24,13 @@ export const router = createBrowserRouter([
       {
         element: <RutaPorRol roles={['COORDINADOR']} />,
         children: [{ path: '/coordinador', element: <CoordinadorPage /> }],
+      },
+      {
+        element: <RutaPorRol roles={['DOCENTE']} />,
+        children: [
+          { path: '/docente/grupos', element: <GruposPage /> },
+          { path: '/docente/grupos/:id', element: <GrupoDetallePage /> },
+        ],
       },
     ],
   },
