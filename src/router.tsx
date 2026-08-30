@@ -5,6 +5,7 @@ import RegisterPage from './features/auth/RegisterPage'
 import CoordinadorPage from './features/coordinador/CoordinadorPage'
 import GrupoDetallePage from './features/docente/GrupoDetallePage'
 import GruposPage from './features/docente/GruposPage'
+import RevisionesPage from './features/docente/RevisionesPage'
 import ExamenesDisponiblesPage from './features/examenes/ExamenesDisponiblesPage'
 import ResumenSimulacroPage from './features/simulacro/ResumenSimulacroPage'
 import SimulacroPage from './features/simulacro/SimulacroPage'
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
         children: [
           { path: '/docente/grupos', element: <GruposPage /> },
           { path: '/docente/grupos/:id', element: <GrupoDetallePage /> },
+          { path: '/docente/revisiones', element: <RevisionesPage /> },
         ],
       },
     ],
