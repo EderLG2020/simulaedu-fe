@@ -48,6 +48,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     useAuthStore.getState().cerrarSesion()
   }
 
+  // 204 No Content (ej. DELETE): no hay cuerpo que parsear como JSON.
+  if (response.status === 204) {
+    return undefined as T
+  }
+
   const body = await response.json()
 
   if (!response.ok) {

@@ -12,7 +12,11 @@ function App() {
         <>
           <p>Hola, {usuario.nombre}.</p>
           <div className="home-actions">
-            <Link to="/examenes">Ver examenes disponibles</Link>
+            {usuario.rol === 'COORDINADOR' ? (
+              <Link to="/coordinador">Panel de coordinador</Link>
+            ) : (
+              <Link to="/examenes">Ver examenes disponibles</Link>
+            )}
             <button type="button" onClick={cerrarSesion}>
               Cerrar sesion
             </button>
