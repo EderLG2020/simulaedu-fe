@@ -19,7 +19,15 @@ function App() {
                 <Link to="/docente/revisiones">Revisiones pendientes</Link>
               </>
             )}
-            {usuario.rol === 'ADMIN' && <Link to="/admin/usuarios">Usuarios</Link>}
+            {usuario.rol === 'ADMIN' && (
+              <>
+                <Link to="/admin/usuarios">Usuarios</Link>
+                <Link to="/admin/universidades">Universidades</Link>
+                <Link to="/admin/planes">Planes</Link>
+                <Link to="/admin/instituciones">Instituciones</Link>
+                <Link to="/admin/reportes">Reportes globales</Link>
+              </>
+            )}
             {usuario.rol !== 'COORDINADOR' && usuario.rol !== 'DOCENTE' && usuario.rol !== 'ADMIN' && (
               <Link to="/examenes">Ver examenes disponibles</Link>
             )}

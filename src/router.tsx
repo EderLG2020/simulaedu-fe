@@ -1,5 +1,9 @@
 import { createBrowserRouter } from 'react-router-dom'
 import App from './App'
+import AdminInstitucionesPage from './features/admin/AdminInstitucionesPage'
+import AdminPlanesPage from './features/admin/AdminPlanesPage'
+import AdminReportesGlobalesPage from './features/admin/AdminReportesGlobalesPage'
+import AdminUniversidadesPage from './features/admin/AdminUniversidadesPage'
 import AdminUsuariosPage from './features/admin/AdminUsuariosPage'
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
@@ -41,7 +45,13 @@ export const router = createBrowserRouter([
       },
       {
         element: <RutaPorRol roles={['ADMIN']} />,
-        children: [{ path: '/admin/usuarios', element: <AdminUsuariosPage /> }],
+        children: [
+          { path: '/admin/usuarios', element: <AdminUsuariosPage /> },
+          { path: '/admin/universidades', element: <AdminUniversidadesPage /> },
+          { path: '/admin/planes', element: <AdminPlanesPage /> },
+          { path: '/admin/instituciones', element: <AdminInstitucionesPage /> },
+          { path: '/admin/reportes', element: <AdminReportesGlobalesPage /> },
+        ],
       },
     ],
   },
