@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { crearGrupo, eliminarGrupo, listarGrupos, type Grupo } from '../../api/gruposApi'
 import { useAuth } from '../../hooks/useAuth'
+import ReporteBoton from './ReporteBoton'
 import './docente.css'
 
 export default function GruposPage() {
@@ -12,6 +13,13 @@ export default function GruposPage() {
   const [error, setError] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
   const [eliminandoId, setEliminandoId] = useState<string | null>(null)
+  const [seleccionados, setSeleccionados] = useState<string[]>([])
+
+  function alternarSeleccion(grupoId: string) {
+    setSeleccionados((actual) =>
+      actual.includes(grupoId) ? actual.filter((id) => id !== grupoId) : [...actual, grupoId],
+    )
+  }
 
   function cargar() {
     listarGrupos()
@@ -80,10 +88,17 @@ export default function GruposPage() {
       <ul className="docente-lista">
         {grupos?.map((grupo) => (
           <li key={grupo.id} className="docente-grupo">
+            <input
+              type="checkbox"
+              checked={seleccionados.includes(grupo.id)}
+              onChange={() => alternarSeleccion(grupo.id)}
+              aria-label={`Seleccionar ${grupo.nombre} para comparar`}
+            />
             <Link to={`/docente/grupos/${grupo.id}`} className="docente-grupo-link">
               <h2>{grupo.nombre}</h2>
               <p>{grupo.totalAlumnos} alumno(s)</p>
             </Link>
+            <Link to={`/docente/grupos/${grupo.id}/estadisticas`}>Estadisticas</Link>
             <button
               type="button"
               className="docente-eliminar"
@@ -95,6 +110,13 @@ export default function GruposPage() {
           </li>
         ))}
       </ul>
+
+      {seleccionados.length >= 2 && (
+        <p className="docente-reporte-grupo">
+          Reporte comparativo de {seleccionados.length} grupos:{' '}
+          <ReporteBoton base={{ tipo: 'COMPARATIVO', grupoIds: seleccionados }} etiqueta="Generar" />
+        </p>
+      )}
     </div>
   )
 }

@@ -226,3 +226,73 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.docente-reporte-grupo {
+  margin-bottom: 16px;
+}
+
+.reporte-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reporte-boton select,
+.reporte-boton button {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.reporte-boton button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.docente-tabla {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.docente-tabla th,
+.docente-tabla td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.docente-resumen-examen {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.docente-resumen-examen > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.docente-resumen-valor {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.docente-resumen-etiqueta {
+  font-size: 13px;
+}
+
+.docente-pregunta-error {
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}

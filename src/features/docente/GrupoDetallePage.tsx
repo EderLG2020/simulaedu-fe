@@ -177,6 +177,7 @@ export default function GrupoDetallePage() {
           </Link>
           <h1>{grupo?.nombre ?? 'Cargando...'}</h1>
         </div>
+        {grupoId && <Link to={`/docente/grupos/${grupoId}/estadisticas`}>Ver estadisticas</Link>}
       </header>
 
       {error && <p className="docente-error">{error}</p>}
@@ -248,6 +249,7 @@ export default function GrupoDetallePage() {
                   {new Date(asignacion.fechaInicio).toLocaleString()} &rarr; {new Date(asignacion.fechaFin).toLocaleString()}
                 </p>
               </div>
+              <Link to={`/docente/examenes/${asignacion.examenId}/estadisticas`}>Estadisticas</Link>
               <button
                 type="button"
                 className="docente-eliminar"
