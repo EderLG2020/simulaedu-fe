@@ -75,6 +75,66 @@
   border-radius: 12px;
 }
 
+.docente-revision {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.docente-revision-enunciado {
+  color: var(--text-h);
+}
+
+.docente-revision-respuesta {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  white-space: pre-wrap;
+}
+
+.docente-calificar {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+
+.docente-calificar label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.docente-calificar input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  width: 100px;
+}
+
+.docente-calificar button {
+  font: inherit;
+  font-weight: 500;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #fff;
+  background: var(--accent);
+}
+
+.docente-calificar button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .docente-grupo-link {
   flex: 1;
   color: inherit;

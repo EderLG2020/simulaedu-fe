@@ -13,7 +13,12 @@ function App() {
           <p>Hola, {usuario.nombre}.</p>
           <div className="home-actions">
             {usuario.rol === 'COORDINADOR' && <Link to="/coordinador">Panel de coordinador</Link>}
-            {usuario.rol === 'DOCENTE' && <Link to="/docente/grupos">Mis grupos</Link>}
+            {usuario.rol === 'DOCENTE' && (
+              <>
+                <Link to="/docente/grupos">Mis grupos</Link>
+                <Link to="/docente/revisiones">Revisiones pendientes</Link>
+              </>
+            )}
             {usuario.rol !== 'COORDINADOR' && usuario.rol !== 'DOCENTE' && (
               <Link to="/examenes">Ver examenes disponibles</Link>
             )}
