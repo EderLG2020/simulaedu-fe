@@ -19,7 +19,8 @@ function App() {
                 <Link to="/docente/revisiones">Revisiones pendientes</Link>
               </>
             )}
-            {usuario.rol !== 'COORDINADOR' && usuario.rol !== 'DOCENTE' && (
+            {usuario.rol === 'ADMIN' && <Link to="/admin/usuarios">Usuarios</Link>}
+            {usuario.rol !== 'COORDINADOR' && usuario.rol !== 'DOCENTE' && usuario.rol !== 'ADMIN' && (
               <Link to="/examenes">Ver examenes disponibles</Link>
             )}
             <button type="button" onClick={cerrarSesion}>

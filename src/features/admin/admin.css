@@ -1,0 +1,110 @@
+.admin-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-cerrar-sesion {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-error {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  font-size: 14px;
+}
+
+.admin-filtros {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-filtros select {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.admin-tabla {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.admin-tabla th,
+.admin-tabla td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.admin-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-acciones button {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-acciones button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-acciones .admin-eliminar {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.admin-paginacion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.admin-paginacion button {
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-paginacion button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
