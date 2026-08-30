@@ -32,17 +32,64 @@
 
 .admin-filtros {
   display: flex;
+  align-items: end;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.admin-filtros select {
+.admin-filtros select,
+.admin-filtros input {
   font: inherit;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
   color: var(--text-h);
+}
+
+.admin-filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.admin-filtros button {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-filtros button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.admin-resumen > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-resumen-valor {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.admin-resumen-etiqueta {
+  font-size: 13px;
+  max-width: 220px;
 }
 
 .admin-tabla {
@@ -107,4 +154,115 @@
 .admin-paginacion button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.admin-header button {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+  padding: 16px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.admin-formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.admin-formulario input,
+.admin-formulario textarea {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.admin-formulario textarea {
+  font-family: monospace;
+  resize: vertical;
+}
+
+.admin-formulario-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-formulario-acciones button {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.admin-formulario-nota {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.admin-formulario-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.admin-acciones-licencias {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.admin-form-licencias {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-form-licencias input {
+  width: 72px;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.admin-form-licencias button {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-error-fila {
+  margin: 0;
+  padding: 4px 0 0;
+  background: transparent;
+  border: none;
+  width: 100%;
+  font-size: 12px;
 }
