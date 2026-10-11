@@ -1,6 +1,7 @@
+import { renovarSesion, terminarSesionLocal, tokenPorVencer } from '../lib/sesion'
 import { useAuthStore } from '../stores/authStore'
-
-const BASE_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1'
+import { fetchMonitoreado } from '../stores/conexionStore'
+import { API_BASE_URL } from './config'
 
 export interface ApiErrorDetail {
   field: string
@@ -42,23 +43,47 @@ export interface ApiPageEnvelope<T> {
   meta: PageMeta
 }
 
-async function realizarPeticion(path: string, options: RequestInit): Promise<unknown> {
+/** Endpoints de /auth: llevan la cookie de sesion (credentials) y nunca disparan una renovacion. */
+const esAuth = (path: string) => path.startsWith('/auth/')
+
+async function enviar(path: string, options: RequestInit, puedeReintentar = true): Promise<Response> {
+  // Renovacion preventiva: mejor renovar antes que mandar un token a punto de vencer. Si no
+  // se puede (sin red, servidor lento), se sigue con el token actual, que aun es valido.
+  if (!esAuth(path) && tokenPorVencer()) await renovarSesion().catch(() => null)
   const accessToken = useAuthStore.getState().accessToken
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetchMonitoreado(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: esAuth(path) ? 'include' : 'same-origin',
     headers: {
-      'Content-Type': 'application/json',
+      // Con FormData el navegador arma el Content-Type multipart (con su boundary) - no hay que pisarlo.
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options.headers,
     },
   })
 
-  // Sesion vencida o token invalido: no tiene sentido conservar una sesion
-  // que el backend ya no reconoce, se limpia para que la UI vuelva a /login.
-  if (response.status === 401 && accessToken) {
-    useAuthStore.getState().cerrarSesion()
+  // Token vencido o rechazado: se renueva con la cookie y se reintenta UNA vez. Si la
+  // renovacion falla, renovarSesion ya cerro la sesion (la UI vuelve a /login).
+  if (response.status === 401 && accessToken && !esAuth(path)) {
+    if (puedeReintentar && (await renovarSesion())) return enviar(path, options, false)
+    if (!puedeReintentar) terminarSesionLocal()
   }
+  return response
+}
+
+/** Para endpoints que devuelven un archivo (ej. plantillas) en vez del envelope JSON. */
+export async function apiFetchArchivo(path: string): Promise<Blob> {
+  const response = await enviar(path, {})
+  if (!response.ok) {
+    const { error } = (await response.json()) as ApiErrorEnvelope
+    throw new ApiError(error.code, error.message, error.details)
+  }
+  return response.blob()
+}
+
+async function realizarPeticion(path: string, options: RequestInit): Promise<unknown> {
+  const response = await enviar(path, options)
 
   // 204 No Content (ej. DELETE): no hay cuerpo que parsear como JSON.
   if (response.status === 204) {

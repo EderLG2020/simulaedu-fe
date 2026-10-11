@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { apiFetch, apiFetchPagina, type ApiPageEnvelope } from './client'
 import type { NavegacionExamen } from './examenesApi'
 
 export type TipoPregunta = 'OPCION_UNICA' | 'OPCION_MULTIPLE' | 'EMPAREJAMIENTO' | 'DESARROLLO' | 'NUMERICA'
@@ -105,4 +105,21 @@ export function reanudarSimulacro(simulacroId: string): Promise<SimulacroActual>
 
 export function finalizarSimulacro(simulacroId: string): Promise<ResumenSimulacro> {
   return apiFetch(`/simulacros/${simulacroId}/finalizar`, { method: 'PATCH' })
+}
+
+export interface HistorialSimulacro {
+  simulacroId: string
+  examenNombre: string
+  universidadNombre: string
+  fecha: string | null
+  puntajeTotal: number
+  estado: EstadoSimulacro
+}
+
+/**
+ * RN-08: el plan Free siempre recibe un solo item (el backend ignora `page`
+ * y fuerza tamano 1), aunque `meta.total`/`totalPages` reflejen el total real.
+ */
+export function listarHistorial(page: number, limit: number): Promise<ApiPageEnvelope<HistorialSimulacro>> {
+  return apiFetchPagina<HistorialSimulacro>(`/simulacros/historial?page=${page}&limit=${limit}`)
 }

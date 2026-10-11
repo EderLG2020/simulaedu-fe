@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { obtenerReporte, solicitarReporte, type FormatoReporte, type SolicitarReporteInput } from '../../api/reportesApi'
+import { Button, buttonClasses, Icon, Select } from '../../components/ui'
 
 const INTERVALO_POLL_MS = 2000
 
@@ -56,20 +57,32 @@ export default function ReporteBoton({ base, etiqueta }: { base: Omit<SolicitarR
   }
 
   return (
-    <span className="reporte-boton">
-      <select value={formato} onChange={(evento) => setFormato(evento.target.value as FormatoReporte)} disabled={generando}>
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <Select
+        aria-label="Formato del reporte"
+        className="h-8 w-auto px-2 text-xs"
+        value={formato}
+        onChange={(evento) => setFormato(evento.target.value as FormatoReporte)}
+        disabled={generando}
+      >
         <option value="PDF">PDF</option>
         <option value="EXCEL">Excel</option>
-      </select>
-      <button type="button" disabled={generando} onClick={generar}>
+      </Select>
+      <Button variant="secondary" size="sm" icon="description" loading={generando} onClick={generar}>
         {generando ? 'Generando...' : etiqueta}
-      </button>
+      </Button>
       {urlDescarga && (
-        <a href={urlDescarga} target="_blank" rel="noreferrer">
+        <a href={urlDescarga} target="_blank" rel="noreferrer" className={buttonClasses('ghost', 'sm', 'text-primary-600 hover:text-primary-700')}>
+          <Icon name="download" size={16} />
           Descargar
         </a>
       )}
-      {error && <span className="docente-error">{error}</span>}
+      {error && (
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600">
+          <Icon name="error" size={16} />
+          {error}
+        </span>
+      )}
     </span>
   )
 }

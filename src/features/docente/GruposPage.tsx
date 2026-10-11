@@ -2,12 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { crearGrupo, eliminarGrupo, listarGrupos, type Grupo } from '../../api/gruposApi'
-import { useAuth } from '../../hooks/useAuth'
+import { Alert, Button, buttonClasses, Card, cn, EmptyState, Icon, Input, PageHeader } from '../../components/ui'
 import ReporteBoton from './ReporteBoton'
-import './docente.css'
 
 export default function GruposPage() {
-  const { cerrarSesion } = useAuth()
   const [grupos, setGrupos] = useState<Grupo[] | null>(null)
   const [nombreNuevo, setNombreNuevo] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -60,62 +58,77 @@ export default function GruposPage() {
   }
 
   return (
-    <div className="docente-page">
-      <header className="docente-header">
-        <h1>Mis grupos</h1>
-        <button type="button" className="docente-cerrar-sesion" onClick={cerrarSesion}>
-          Cerrar sesion
-        </button>
-      </header>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <PageHeader title="Mis grupos" description="Crea grupos, invita a tus alumnos y asígnales exámenes." />
 
-      {error && <p className="docente-error">{error}</p>}
+      {error && <Alert>{error}</Alert>}
 
-      <form className="docente-crear-grupo" onSubmit={handleCrear}>
-        <input
-          type="text"
-          placeholder="Nombre del grupo (ej. Seccion A)"
-          value={nombreNuevo}
-          onChange={(evento) => setNombreNuevo(evento.target.value)}
-        />
-        <button type="submit" disabled={creando || !nombreNuevo.trim()}>
-          {creando ? 'Creando...' : 'Crear grupo'}
-        </button>
-      </form>
+      <Card className="p-3">
+        <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleCrear}>
+          <Input
+            type="text"
+            placeholder="Nombre del grupo (ej. Seccion A)"
+            value={nombreNuevo}
+            onChange={(evento) => setNombreNuevo(evento.target.value)}
+          />
+          <Button type="submit" icon="add" className="shrink-0" loading={creando} disabled={!nombreNuevo.trim()}>
+            {creando ? 'Creando...' : 'Crear grupo'}
+          </Button>
+        </form>
+      </Card>
 
-      {grupos === null && !error && <p>Cargando grupos...</p>}
-      {grupos !== null && grupos.length === 0 && <p>Todavia no tienes grupos.</p>}
+      <Card className="overflow-hidden">
+        {grupos === null && !error && <EmptyState icon="hourglass_empty" title="Cargando grupos..." />}
+        {grupos !== null && grupos.length === 0 && <EmptyState icon="groups" title="Todavia no tienes grupos." />}
 
-      <ul className="docente-lista">
-        {grupos?.map((grupo) => (
-          <li key={grupo.id} className="docente-grupo">
-            <input
-              type="checkbox"
-              checked={seleccionados.includes(grupo.id)}
-              onChange={() => alternarSeleccion(grupo.id)}
-              aria-label={`Seleccionar ${grupo.nombre} para comparar`}
-            />
-            <Link to={`/docente/grupos/${grupo.id}`} className="docente-grupo-link">
-              <h2>{grupo.nombre}</h2>
-              <p>{grupo.totalAlumnos} alumno(s)</p>
-            </Link>
-            <Link to={`/docente/grupos/${grupo.id}/estadisticas`}>Estadisticas</Link>
-            <button
-              type="button"
-              className="docente-eliminar"
-              disabled={eliminandoId === grupo.id}
-              onClick={() => handleEliminar(grupo)}
-            >
-              {eliminandoId === grupo.id ? 'Eliminando...' : 'Eliminar'}
-            </button>
-          </li>
-        ))}
-      </ul>
+        {grupos !== null && grupos.length > 0 && (
+          <ul className="divide-y divide-slate-100">
+            {grupos.map((grupo) => {
+              const seleccionado = seleccionados.includes(grupo.id)
+              const eliminando = eliminandoId === grupo.id
+              return (
+                <li
+                  key={grupo.id}
+                  className={cn('flex flex-wrap items-center gap-4 px-4 py-3 transition-colors hover:bg-slate-50/60', seleccionado && 'bg-primary-50/50')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={seleccionado}
+                    onChange={() => alternarSeleccion(grupo.id)}
+                    aria-label={`Seleccionar ${grupo.nombre} para comparar`}
+                    className="h-4 w-4 shrink-0 cursor-pointer accent-primary-600"
+                  />
+                  <Link to={`/docente/grupos/${grupo.id}`} className="group flex min-w-0 flex-1 items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                      <Icon name="groups" />
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="truncate font-display text-base font-semibold text-slate-900 group-hover:text-primary-600">{grupo.nombre}</h2>
+                      <p className="text-xs text-slate-500">{grupo.totalAlumnos} alumno(s)</p>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-1">
+                    <Link to={`/docente/grupos/${grupo.id}/estadisticas`} className={buttonClasses('ghost', 'sm')}>
+                      <Icon name="bar_chart" size={16} />
+                      Estadisticas
+                    </Link>
+                    <Button variant="danger" size="sm" icon="delete" loading={eliminando} onClick={() => handleEliminar(grupo)}>
+                      {eliminando ? 'Eliminando...' : 'Eliminar'}
+                    </Button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </Card>
 
       {seleccionados.length >= 2 && (
-        <p className="docente-reporte-grupo">
-          Reporte comparativo de {seleccionados.length} grupos:{' '}
+        <Card className="flex flex-wrap items-center gap-3 border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+          <Icon name="compare_arrows" className="text-primary-600" />
+          <span>Reporte comparativo de {seleccionados.length} grupos:</span>
           <ReporteBoton base={{ tipo: 'COMPARATIVO', grupoIds: seleccionados }} etiqueta="Generar" />
-        </p>
+        </Card>
       )}
     </div>
   )

@@ -8,11 +8,9 @@ import {
   type InstitucionCoordinador,
 } from '../../api/coordinadorApi'
 import { ApiError } from '../../api/client'
-import { useAuth } from '../../hooks/useAuth'
-import './coordinador.css'
+import { Alert, Badge, Button, Card, EmptyState, Icon, PageHeader, StatCard } from '../../components/ui'
 
 export default function CoordinadorPage() {
-  const { cerrarSesion } = useAuth()
   const [institucion, setInstitucion] = useState<InstitucionCoordinador | null>(null)
   const [alumnos, setAlumnos] = useState<AlumnoCoordinador[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -60,70 +58,80 @@ export default function CoordinadorPage() {
   const sinLicenciasDisponibles = institucion !== null && institucion.licenciasDisponibles <= 0
 
   return (
-    <div className="coordinador-page">
-      <header className="coordinador-header">
-        <h1>Panel de coordinador</h1>
-        <button type="button" className="coordinador-cerrar-sesion" onClick={cerrarSesion}>
-          Cerrar sesion
-        </button>
-      </header>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <PageHeader title="Licencias y alumnos" description="Asigna o revoca las licencias de tu institución entre tus alumnos." />
 
-      {error && <p className="coordinador-error">{error}</p>}
+      {error && <Alert>{error}</Alert>}
 
-      {institucion === null && !error && <p>Cargando institucion...</p>}
+      {institucion === null && !error && (
+        <Card>
+          <EmptyState icon="hourglass_empty" title="Cargando institucion..." />
+        </Card>
+      )}
 
       {institucion !== null && (
-        <section className="coordinador-resumen">
-          <h2>{institucion.nombre}</h2>
-          <div className="coordinador-licencias">
-            <div>
-              <span className="coordinador-licencia-valor">{institucion.licenciasUsadas}</span>
-              <span className="coordinador-licencia-etiqueta">usadas</span>
-            </div>
-            <div>
-              <span className="coordinador-licencia-valor">{institucion.licenciasDisponibles}</span>
-              <span className="coordinador-licencia-etiqueta">disponibles</span>
-            </div>
-            <div>
-              <span className="coordinador-licencia-valor">{institucion.licenciasTotales}</span>
-              <span className="coordinador-licencia-etiqueta">contratadas</span>
-            </div>
+        <section className="flex flex-col gap-3">
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-900">
+            <Icon name="apartment" size={20} className="text-primary-600" />
+            {institucion.nombre}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard label="Licencias usadas" value={institucion.licenciasUsadas} icon="badge" tone="primary" />
+            <StatCard
+              label="Licencias disponibles"
+              value={institucion.licenciasDisponibles}
+              icon="event_available"
+              tone={sinLicenciasDisponibles ? 'warning' : 'success'}
+            />
+            <StatCard label="Licencias contratadas" value={institucion.licenciasTotales} icon="inventory_2" tone="neutral" />
           </div>
         </section>
       )}
 
-      {alumnos !== null && alumnos.length === 0 && <p>Todavia no hay alumnos asignados a tu institucion.</p>}
+      {alumnos !== null && alumnos.length === 0 && (
+        <Card>
+          <EmptyState icon="group" title="Todavia no hay alumnos asignados a tu institucion." />
+        </Card>
+      )}
 
       {alumnos !== null && alumnos.length > 0 && (
-        <ul className="coordinador-lista">
-          {alumnos.map((alumno) => (
-            <li key={alumno.id} className="coordinador-alumno">
-              <div>
-                <h3>{alumno.nombre}</h3>
-                <p className="coordinador-alumno-email">{alumno.email}</p>
-              </div>
-              {alumno.licenciaAsignada ? (
-                <button
-                  type="button"
-                  className="coordinador-revocar"
-                  disabled={alumnoEnProceso === alumno.id}
-                  onClick={() => handleRevocar(alumno)}
-                >
-                  {alumnoEnProceso === alumno.id ? 'Revocando...' : 'Revocar licencia'}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="coordinador-asignar"
-                  disabled={alumnoEnProceso === alumno.id || sinLicenciasDisponibles}
-                  onClick={() => handleAsignar(alumno)}
-                >
-                  {alumnoEnProceso === alumno.id ? 'Asignando...' : 'Asignar licencia'}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <Card className="overflow-hidden">
+          <ul className="list-none divide-y divide-slate-100">
+            {alumnos.map((alumno) => {
+              const enProceso = alumnoEnProceso === alumno.id
+              return (
+                <li key={alumno.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+                      <Icon name="person" size={20} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate font-semibold text-slate-900">{alumno.nombre}</h3>
+                        {alumno.licenciaAsignada ? <Badge tone="success">Con licencia</Badge> : <Badge>Sin licencia</Badge>}
+                      </div>
+                      <p className="truncate text-sm text-slate-500">{alumno.email}</p>
+                    </div>
+                  </div>
+                  {alumno.licenciaAsignada ? (
+                    <Button variant="secondary" className="shrink-0" loading={enProceso} onClick={() => handleRevocar(alumno)}>
+                      {enProceso ? 'Revocando...' : 'Revocar licencia'}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="shrink-0"
+                      loading={enProceso}
+                      disabled={sinLicenciasDisponibles}
+                      onClick={() => handleAsignar(alumno)}
+                    >
+                      {enProceso ? 'Asignando...' : 'Asignar licencia'}
+                    </Button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
       )}
     </div>
   )

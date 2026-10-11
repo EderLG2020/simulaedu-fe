@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react'
-import {
-  actualizarPlan,
-  crearPlan,
-  eliminarPlan,
-  listarPlanes,
-  type PlanAdmin,
-  type TipoPlan,
-} from '../../api/adminPlanesApi'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { actualizarPlan, crearPlan, eliminarPlan, listarPlanes, type PlanAdmin, type TipoPlan } from '../../api/adminPlanesApi'
 import { ApiError } from '../../api/client'
-import './admin.css'
+import { Alert, Badge, Button, Card, cn, EmptyState, Field, FieldGroup, Icon, Input, PageHeader, Select, StatCard } from '../../components/ui'
+
+/** Migracion 1:1 del mockup de Stitch (antes en public/, ya eliminado): tarjetas de precio +
+ * panel de edicion persistente a la derecha, en vez de la tabla plana de antes. Las metricas de
+ * marketing del mockup (MRR estimado, conversion free-to-pro, pasarela Izipay activa, banner
+ * "estrategia admision") no se migraron - ningun endpoint las respalda hoy. */
+
+const TABS: { tipo: TipoPlan; label: string; icono: string }[] = [
+  { tipo: 'ESTUDIANTE', label: 'Estudiante', icono: 'school' },
+  { tipo: 'DOCENTE', label: 'Docente', icono: 'menu_book' },
+  { tipo: 'INSTITUCION', label: 'Institución', icono: 'corporate_fare' },
+]
 
 interface FormularioPlan {
   nombre: string
@@ -22,6 +26,7 @@ interface FormularioPlan {
   rankingHabilitado: boolean
   estadisticasAvanzadas: boolean
   reportesDescargables: boolean
+  programasExtra: boolean
 }
 
 const FORMULARIO_VACIO: FormularioPlan = {
@@ -36,19 +41,48 @@ const FORMULARIO_VACIO: FormularioPlan = {
   rankingHabilitado: false,
   estadisticasAvanzadas: false,
   reportesDescargables: false,
+  programasExtra: false,
 }
 
 function aEnteroOpcional(valor: string): number | null {
   return valor.trim() === '' ? null : Number(valor)
 }
 
-function formatearLimite(valor: number | null): string {
-  return valor === null ? 'Sin limite' : String(valor)
+function formatearLimite(valor: number | null, unidad: string): string {
+  return valor === null ? 'Sin límite' : `${valor} ${unidad}`
+}
+
+function FeatureRow({ activo, label }: { activo: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <Icon name={activo ? 'check_circle' : 'cancel'} className={activo ? 'text-emerald-600' : 'text-slate-300'} />
+      <span className={activo ? 'font-medium text-slate-700' : 'text-slate-400 line-through'}>{label}</span>
+    </div>
+  )
+}
+
+function LimiteRow({ icono, children }: { icono: string; children: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Icon name={icono} size={16} className="text-slate-400" />
+      {children}
+    </span>
+  )
+}
+
+/** Interruptor de modulo (checkbox con label en fila). */
+function ModuloCheckbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (valor: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+      {label}
+      <input type="checkbox" checked={checked} onChange={(evento) => onChange(evento.target.checked)} className="h-4 w-4 accent-primary-600" />
+    </label>
+  )
 }
 
 export default function AdminPlanesPage() {
   const [planes, setPlanes] = useState<PlanAdmin[] | null>(null)
-  const [filtroTipo, setFiltroTipo] = useState<TipoPlan | ''>('')
+  const [tipoActivo, setTipoActivo] = useState<TipoPlan>('ESTUDIANTE')
   const [error, setError] = useState<string | null>(null)
   const [accionEnProceso, setAccionEnProceso] = useState<string | null>(null)
 
@@ -59,16 +93,18 @@ export default function AdminPlanesPage() {
   const [guardando, setGuardando] = useState(false)
 
   function cargar() {
-    listarPlanes(filtroTipo || undefined)
+    listarPlanes()
       .then(setPlanes)
       .catch(() => setError('No se pudieron cargar los planes.'))
   }
 
-  useEffect(cargar, [filtroTipo])
+  useEffect(cargar, [])
+
+  const planesDelTipo = useMemo(() => planes?.filter((p) => p.tipo === tipoActivo) ?? null, [planes, tipoActivo])
 
   function abrirCrear() {
     setPlanEnEdicion(null)
-    setFormulario(FORMULARIO_VACIO)
+    setFormulario({ ...FORMULARIO_VACIO, tipo: tipoActivo })
     setErrorFormulario(null)
     setFormularioAbierto(true)
   }
@@ -87,6 +123,7 @@ export default function AdminPlanesPage() {
       rankingHabilitado: plan.rankingHabilitado,
       estadisticasAvanzadas: plan.estadisticasAvanzadas,
       reportesDescargables: plan.reportesDescargables,
+      programasExtra: plan.programasExtra,
     })
     setErrorFormulario(null)
     setFormularioAbierto(true)
@@ -97,7 +134,7 @@ export default function AdminPlanesPage() {
     setPlanEnEdicion(null)
   }
 
-  async function handleGuardar(evento: React.FormEvent) {
+  async function handleGuardar(evento: FormEvent) {
     evento.preventDefault()
     setErrorFormulario(null)
 
@@ -111,6 +148,7 @@ export default function AdminPlanesPage() {
       rankingHabilitado: formulario.rankingHabilitado,
       estadisticasAvanzadas: formulario.estadisticasAvanzadas,
       reportesDescargables: formulario.reportesDescargables,
+      programasExtra: formulario.programasExtra,
     }
 
     setGuardando(true)
@@ -145,199 +183,215 @@ export default function AdminPlanesPage() {
   }
 
   return (
-    <div className="admin-page">
-      <header className="admin-header">
-        <h1>Planes</h1>
-        <button type="button" onClick={abrirCrear}>
-          Nuevo plan
-        </button>
-      </header>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <PageHeader
+        title="Gestión de Planes y Suscripciones"
+        description="Configuración de tiers, límites de simulacros y precios comerciales para la plataforma."
+        actions={
+          <Button icon="add" onClick={abrirCrear}>
+            Nuevo plan
+          </Button>
+        }
+      />
 
-      {error && <p className="admin-error">{error}</p>}
+      {error && <Alert>{error}</Alert>}
 
-      <div className="admin-filtros">
-        <select value={filtroTipo} onChange={(evento) => setFiltroTipo(evento.target.value as TipoPlan | '')}>
-          <option value="">Todos los tipos</option>
-          <option value="ESTUDIANTE">Estudiante</option>
-          <option value="DOCENTE">Docente</option>
-          <option value="INSTITUCION">Institucion</option>
-        </select>
+      {planes && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Planes configurados" value={planes.length} icon="sell" />
+        </div>
+      )}
+
+      {/* Pestanas por tipo con contador: SegmentedControl solo acepta label de texto, por eso va local. */}
+      <div className="flex w-fit flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+        {TABS.map((tab) => {
+          const count = planes?.filter((p) => p.tipo === tab.tipo).length ?? 0
+          const activo = tab.tipo === tipoActivo
+          return (
+            <button
+              key={tab.tipo}
+              type="button"
+              aria-pressed={activo}
+              onClick={() => setTipoActivo(tab.tipo)}
+              className={cn(
+                'flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors',
+                'focus-visible:outline-2 focus-visible:outline-primary-600',
+                activo ? 'bg-white text-primary-600 shadow-xs' : 'text-slate-500 hover:text-slate-900',
+              )}
+            >
+              <Icon name={tab.icono} size={16} />
+              {tab.label}
+              <Badge tone={activo ? 'primary' : 'neutral'}>{count}</Badge>
+            </button>
+          )
+        })}
       </div>
 
-      {formularioAbierto && (
-        <form className="admin-formulario" onSubmit={handleGuardar}>
-          <h2>{planEnEdicion ? 'Editar plan' : 'Nuevo plan'}</h2>
-          {errorFormulario && <p className="admin-error">{errorFormulario}</p>}
-          <label>
-            Nombre
-            <input
-              value={formulario.nombre}
-              onChange={(evento) => setFormulario({ ...formulario, nombre: evento.target.value })}
-              required
-            />
-          </label>
-          {planEnEdicion ? (
-            <p className="admin-formulario-nota">
-              Tipo: {planEnEdicion.tipo} · Tier: {planEnEdicion.tier} (no editables)
-            </p>
-          ) : (
-            <>
-              <label>
-                Tipo
-                <select
-                  value={formulario.tipo}
-                  onChange={(evento) => setFormulario({ ...formulario, tipo: evento.target.value as TipoPlan })}
-                >
-                  <option value="ESTUDIANTE">Estudiante</option>
-                  <option value="DOCENTE">Docente</option>
-                  <option value="INSTITUCION">Institucion</option>
-                </select>
-              </label>
-              <label>
-                Tier
-                <input value={formulario.tier} onChange={(evento) => setFormulario({ ...formulario, tier: evento.target.value })} required />
-              </label>
-            </>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8 xl:grid-cols-3">
+          {planesDelTipo === null && !error && (
+            <Card className="col-span-full">
+              <EmptyState icon="hourglass_empty" title="Cargando planes..." />
+            </Card>
           )}
-          <label>
-            Precio mensual (S/)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formulario.precioMensual}
-              onChange={(evento) => setFormulario({ ...formulario, precioMensual: evento.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Simulacros por mes (vacio = sin limite)
-            <input
-              type="number"
-              min="0"
-              value={formulario.simulacrosPorMes}
-              onChange={(evento) => setFormulario({ ...formulario, simulacrosPorMes: evento.target.value })}
-            />
-          </label>
-          <label>
-            Universidades max (vacio = sin limite)
-            <input
-              type="number"
-              min="0"
-              value={formulario.universidadesMax}
-              onChange={(evento) => setFormulario({ ...formulario, universidadesMax: evento.target.value })}
-            />
-          </label>
-          <label>
-            Alumnos max (vacio = sin limite)
-            <input
-              type="number"
-              min="0"
-              value={formulario.alumnosMax}
-              onChange={(evento) => setFormulario({ ...formulario, alumnosMax: evento.target.value })}
-            />
-          </label>
-          <label>
-            Grupos max (vacio = sin limite)
-            <input
-              type="number"
-              min="0"
-              value={formulario.gruposMax}
-              onChange={(evento) => setFormulario({ ...formulario, gruposMax: evento.target.value })}
-            />
-          </label>
-          <label className="admin-formulario-checkbox">
-            <input
-              type="checkbox"
-              checked={formulario.rankingHabilitado}
-              onChange={(evento) => setFormulario({ ...formulario, rankingHabilitado: evento.target.checked })}
-            />
-            Ranking habilitado
-          </label>
-          <label className="admin-formulario-checkbox">
-            <input
-              type="checkbox"
-              checked={formulario.estadisticasAvanzadas}
-              onChange={(evento) => setFormulario({ ...formulario, estadisticasAvanzadas: evento.target.checked })}
-            />
-            Estadisticas avanzadas
-          </label>
-          <label className="admin-formulario-checkbox">
-            <input
-              type="checkbox"
-              checked={formulario.reportesDescargables}
-              onChange={(evento) => setFormulario({ ...formulario, reportesDescargables: evento.target.checked })}
-            />
-            Reportes descargables
-          </label>
-          <div className="admin-formulario-acciones">
-            <button type="submit" disabled={guardando}>
-              {guardando ? 'Guardando...' : 'Guardar'}
-            </button>
-            <button type="button" onClick={cerrarFormulario} disabled={guardando}>
-              Cancelar
-            </button>
-          </div>
-        </form>
-      )}
+          {planesDelTipo !== null && planesDelTipo.length === 0 && (
+            <Card className="col-span-full">
+              <EmptyState icon="sell" title="No hay planes de este tipo todavía." />
+            </Card>
+          )}
+          {planesDelTipo?.map((plan) => (
+            <Card key={plan.id} className="flex flex-col gap-4 p-5">
+              <div>
+                <Badge tone="primary">Tier {plan.tier}</Badge>
+                <h3 className="mt-2 font-display text-lg font-bold text-slate-900">{plan.nombre}</h3>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="font-display text-2xl font-bold text-slate-900">S/ {plan.precioMensual.toFixed(2)}</span>
+                  <span className="text-xs text-slate-400">/mes</span>
+                </div>
+              </div>
 
-      {planes === null && !error && <p>Cargando planes...</p>}
-      {planes !== null && planes.length === 0 && <p>No hay planes que coincidan con este filtro.</p>}
+              <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                <LimiteRow icono="bolt">{formatearLimite(plan.simulacrosPorMes, 'simulacros/mes')}</LimiteRow>
+                <LimiteRow icono="account_balance">{formatearLimite(plan.universidadesMax, 'universidades')}</LimiteRow>
+                <LimiteRow icono="groups">{formatearLimite(plan.alumnosMax, 'alumnos')}</LimiteRow>
+                <LimiteRow icono="diversity_3">{formatearLimite(plan.gruposMax, 'grupos')}</LimiteRow>
+              </div>
 
-      {planes !== null && planes.length > 0 && (
-        <table className="admin-tabla">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Tier</th>
-              <th>Precio</th>
-              <th>Simulacros/mes</th>
-              <th>Universidades</th>
-              <th>Alumnos</th>
-              <th>Grupos</th>
-              <th>Features</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {planes.map((plan) => (
-              <tr key={plan.id}>
-                <td>{plan.nombre}</td>
-                <td>{plan.tipo}</td>
-                <td>{plan.tier}</td>
-                <td>S/ {plan.precioMensual.toFixed(2)}</td>
-                <td>{formatearLimite(plan.simulacrosPorMes)}</td>
-                <td>{formatearLimite(plan.universidadesMax)}</td>
-                <td>{formatearLimite(plan.alumnosMax)}</td>
-                <td>{formatearLimite(plan.gruposMax)}</td>
-                <td>
-                  {[
-                    plan.rankingHabilitado && 'Ranking',
-                    plan.estadisticasAvanzadas && 'Estadisticas',
-                    plan.reportesDescargables && 'Reportes',
-                  ]
-                    .filter(Boolean)
-                    .join(', ') || '-'}
-                </td>
-                <td className="admin-acciones">
-                  <button type="button" disabled={accionEnProceso === plan.id} onClick={() => abrirEditar(plan)}>
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-eliminar"
-                    disabled={accionEnProceso === plan.id}
-                    onClick={() => handleEliminar(plan)}
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+              <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
+                <FeatureRow activo={plan.rankingHabilitado} label="Ranking nacional" />
+                <FeatureRow activo={plan.estadisticasAvanzadas} label="Estadísticas avanzadas" />
+                <FeatureRow activo={plan.reportesDescargables} label="Reportes descargables" />
+                <FeatureRow activo={plan.programasExtra} label="Idiomas y tecnología" />
+              </div>
+
+              <div className="mt-auto flex items-center gap-2 pt-2">
+                <Button variant="secondary" size="sm" className="flex-1" disabled={accionEnProceso === plan.id} onClick={() => abrirEditar(plan)}>
+                  Editar plan
+                </Button>
+                <Button
+                  variant="danger"
+                  size="icon"
+                  title="Eliminar plan"
+                  aria-label="Eliminar plan"
+                  disabled={accionEnProceso === plan.id}
+                  onClick={() => handleEliminar(plan)}
+                >
+                  <Icon name="delete" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <Card className="overflow-hidden lg:sticky lg:top-8 lg:col-span-4">
+          {!formularioAbierto ? (
+            <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 p-8 text-center text-slate-400">
+              <Icon name="tune" size={32} className="text-slate-300" />
+              <p className="text-sm font-medium text-slate-500">Elige "Editar plan" en una tarjeta, o crea uno nuevo, para configurarlo aquí.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleGuardar} className="flex flex-col">
+              <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                  <Icon name="sell" size={20} />
+                </span>
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-slate-500">Configuración comercial</span>
+                  <div className="truncate font-display text-base font-bold text-slate-900">{planEnEdicion ? `Editar: ${planEnEdicion.nombre}` : 'Nuevo plan'}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4 p-5">
+                {errorFormulario && <Alert>{errorFormulario}</Alert>}
+
+                {planEnEdicion ? (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+                    <Icon name="lock" size={16} className="mt-px" />
+                    <span>
+                      El <strong>tipo</strong> y <strong>tier</strong> ({planEnEdicion.tipo} / {planEnEdicion.tier}) no son editables tras crear el plan.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Tipo de plan">
+                      <Select value={formulario.tipo} onChange={(evento) => setFormulario({ ...formulario, tipo: evento.target.value as TipoPlan })}>
+                        <option value="ESTUDIANTE">Estudiante</option>
+                        <option value="DOCENTE">Docente</option>
+                        <option value="INSTITUCION">Institución</option>
+                      </Select>
+                    </Field>
+                    <Field label="Tier interno">
+                      <Input value={formulario.tier} onChange={(evento) => setFormulario({ ...formulario, tier: evento.target.value })} required />
+                    </Field>
+                  </div>
+                )}
+
+                <Field label="Nombre comercial público">
+                  <Input value={formulario.nombre} onChange={(evento) => setFormulario({ ...formulario, nombre: evento.target.value })} required />
+                </Field>
+
+                <Field label="Precio mensual (S/)">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formulario.precioMensual}
+                    onChange={(evento) => setFormulario({ ...formulario, precioMensual: evento.target.value })}
+                    required
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Simulacros/mes (vacío = sin límite)">
+                    <Input type="number" min="0" value={formulario.simulacrosPorMes} onChange={(evento) => setFormulario({ ...formulario, simulacrosPorMes: evento.target.value })} />
+                  </Field>
+                  <Field label="Universidades máx.">
+                    <Input type="number" min="0" value={formulario.universidadesMax} onChange={(evento) => setFormulario({ ...formulario, universidadesMax: evento.target.value })} />
+                  </Field>
+                  <Field label="Alumnos máx.">
+                    <Input type="number" min="0" value={formulario.alumnosMax} onChange={(evento) => setFormulario({ ...formulario, alumnosMax: evento.target.value })} />
+                  </Field>
+                  <Field label="Grupos máx.">
+                    <Input type="number" min="0" value={formulario.gruposMax} onChange={(evento) => setFormulario({ ...formulario, gruposMax: evento.target.value })} />
+                  </Field>
+                </div>
+
+                <FieldGroup label="Módulos y permisos avanzados">
+                  <ModuloCheckbox
+                    label="Ranking nacional"
+                    checked={formulario.rankingHabilitado}
+                    onChange={(rankingHabilitado) => setFormulario({ ...formulario, rankingHabilitado })}
+                  />
+                  <ModuloCheckbox
+                    label="Estadísticas avanzadas"
+                    checked={formulario.estadisticasAvanzadas}
+                    onChange={(estadisticasAvanzadas) => setFormulario({ ...formulario, estadisticasAvanzadas })}
+                  />
+                  <ModuloCheckbox
+                    label="Reportes descargables"
+                    checked={formulario.reportesDescargables}
+                    onChange={(reportesDescargables) => setFormulario({ ...formulario, reportesDescargables })}
+                  />
+                  <ModuloCheckbox
+                    label="Idiomas y tecnología"
+                    checked={formulario.programasExtra}
+                    onChange={(programasExtra) => setFormulario({ ...formulario, programasExtra })}
+                  />
+                </FieldGroup>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Button type="submit" className="flex-1" loading={guardando}>
+                    {guardando ? 'Guardando...' : 'Guardar cambios'}
+                  </Button>
+                  <Button variant="secondary" onClick={cerrarFormulario} disabled={guardando}>
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </form>
+          )}
+        </Card>
+      </div>
     </div>
   )
 }

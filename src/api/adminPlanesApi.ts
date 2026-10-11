@@ -15,6 +15,8 @@ export interface PlanAdmin {
   rankingHabilitado: boolean
   estadisticasAvanzadas: boolean
   reportesDescargables: boolean
+  /** Incluye los programas de idiomas y tecnologia. */
+  programasExtra: boolean
 }
 
 export interface PlanCrearRequest {
@@ -29,6 +31,8 @@ export interface PlanCrearRequest {
   rankingHabilitado: boolean
   estadisticasAvanzadas: boolean
   reportesDescargables: boolean
+  /** Incluye los programas de idiomas y tecnologia. */
+  programasExtra: boolean
 }
 
 /** RF-33: tipo/tier no son editables tras crear el plan (ver com.simulaedu.admin.dto.PlanActualizarRequest). */

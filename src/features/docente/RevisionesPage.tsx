@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ApiError } from '../../api/client'
 import { calificarRevision, listarRevisionesPendientes, type RevisionPendiente } from '../../api/revisionesApi'
-import { useAuth } from '../../hooks/useAuth'
-import './docente.css'
+import { Alert, Button, Card, EmptyState, Field, Icon, Input, PageHeader } from '../../components/ui'
+import { CLASE_CODIGO_Y_AUDIO } from '../simulacro/estilosSimulacro'
+import { htmlSeguro } from '../../lib/html'
 
 function textoDeRespuesta(respuestaDada: Record<string, unknown>): string {
   if (typeof respuestaDada.texto === 'string' && respuestaDada.texto.trim() !== '') {
@@ -12,7 +13,6 @@ function textoDeRespuesta(respuestaDada: Record<string, unknown>): string {
 }
 
 export default function RevisionesPage() {
-  const { cerrarSesion } = useAuth()
   const [pendientes, setPendientes] = useState<RevisionPendiente[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [puntajes, setPuntajes] = useState<Record<string, string>>({})
@@ -47,49 +47,66 @@ export default function RevisionesPage() {
   }
 
   return (
-    <div className="docente-page">
-      <header className="docente-header">
-        <h1>Revisiones pendientes</h1>
-        <button type="button" className="docente-cerrar-sesion" onClick={cerrarSesion}>
-          Cerrar sesion
-        </button>
-      </header>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+      <PageHeader title="Revisiones pendientes" description="Respuestas de desarrollo que esperan tu calificación." />
 
-      {error && <p className="docente-error">{error}</p>}
+      {error && <Alert>{error}</Alert>}
 
-      {pendientes === null && !error && <p>Cargando revisiones...</p>}
-      {pendientes !== null && pendientes.length === 0 && <p>No tienes revisiones pendientes por ahora.</p>}
+      {pendientes === null && !error && (
+        <Card>
+          <EmptyState icon="hourglass_empty" title="Cargando revisiones..." />
+        </Card>
+      )}
+      {pendientes !== null && pendientes.length === 0 && (
+        <Card>
+          <EmptyState icon="task_alt" title="No tienes revisiones pendientes por ahora." />
+        </Card>
+      )}
 
-      <ul className="docente-lista">
-        {pendientes?.map((revision) => (
-          <li key={revision.respuestaSimulacroId} className="docente-revision">
-            <p className="docente-alumno-email">
-              {revision.alumnoNombre} &middot; {revision.examenNombre}
-            </p>
-            <div className="docente-revision-enunciado" dangerouslySetInnerHTML={{ __html: revision.enunciadoHtml }} />
-            <p className="docente-revision-respuesta">{textoDeRespuesta(revision.respuestaDada)}</p>
-
-            <form className="docente-calificar" onSubmit={(evento) => handleCalificar(evento, revision)}>
-              <label>
-                Puntaje (0 - {revision.puntajeMaximo})
-                <input
-                  type="number"
-                  min={0}
-                  max={revision.puntajeMaximo}
-                  step="0.1"
-                  value={puntajes[revision.respuestaSimulacroId] ?? ''}
-                  onChange={(evento) =>
-                    setPuntajes((actual) => ({ ...actual, [revision.respuestaSimulacroId]: evento.target.value }))
-                  }
-                  required
+      <ul className="flex flex-col gap-4">
+        {pendientes?.map((revision) => {
+          const calificando = calificandoId === revision.respuestaSimulacroId
+          return (
+            <li key={revision.respuestaSimulacroId}>
+              <Card className="flex flex-col gap-4 p-5">
+                <p className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+                  <Icon name="person" size={16} className="text-slate-400" />
+                  <span className="font-medium text-slate-700">{revision.alumnoNombre}</span> &middot; {revision.examenNombre}
+                </p>
+                <div
+                  className={`text-sm text-slate-900 [&_img]:max-w-full [&_img]:rounded-md ${CLASE_CODIGO_Y_AUDIO}`}
+                  dangerouslySetInnerHTML={{ __html: htmlSeguro(revision.enunciadoHtml) }}
                 />
-              </label>
-              <button type="submit" disabled={calificandoId === revision.respuestaSimulacroId}>
-                {calificandoId === revision.respuestaSimulacroId ? 'Calificando...' : 'Calificar'}
-              </button>
-            </form>
-          </li>
-        ))}
+                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm whitespace-pre-wrap text-slate-700">
+                  {textoDeRespuesta(revision.respuestaDada)}
+                </p>
+
+                <form
+                  className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4"
+                  onSubmit={(evento) => handleCalificar(evento, revision)}
+                >
+                  <Field label={`Puntaje (0 - ${revision.puntajeMaximo})`}>
+                    <Input
+                      type="number"
+                      className="w-32"
+                      min={0}
+                      max={revision.puntajeMaximo}
+                      step="0.1"
+                      value={puntajes[revision.respuestaSimulacroId] ?? ''}
+                      onChange={(evento) =>
+                        setPuntajes((actual) => ({ ...actual, [revision.respuestaSimulacroId]: evento.target.value }))
+                      }
+                      required
+                    />
+                  </Field>
+                  <Button type="submit" icon="check" loading={calificando}>
+                    {calificando ? 'Calificando...' : 'Calificar'}
+                  </Button>
+                </form>
+              </Card>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
