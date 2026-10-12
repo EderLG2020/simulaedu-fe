@@ -15,16 +15,18 @@ import {
   type ExamenRequest,
   type ExamenResumen,
   type NavegacionExamen,
+  type TipoExamen,
   type TipoSeleccion,
 } from '../../api/examenesApi'
 import { listarPreguntas, obtenerPregunta, type Dificultad, type Pregunta } from '../../api/preguntasApi'
 import { listarUniversidades, type UniversidadResumen } from '../../api/universidadesApi'
 import InfoTooltip from '../../components/InfoTooltip'
-import { Alert, Badge, Button, Card, cn, EmptyState, Field, Icon, Input, SegmentedControl, Select } from '../../components/ui'
+import { Alert, Badge, Button, Card, cn, EmptyState, Field, Icon, Input, SegmentedControl, Select, Textarea } from '../../components/ui'
 import { formatearDuracion } from '../../lib/formato'
 import { textoPlanoDe } from '../../lib/html'
 import { moverElemento, repartirEquitativamente } from './composicion'
 import { useGestionExamenes } from './gestion'
+import { ETIQUETA_TIPO } from './resumenExamenes'
 
 /** Crear/editar/publicar un examen a pantalla completa, en 3 pasos (datos -> composicion ->
  * publicar). Ruta /admin/examenes/:examenId (o /docente/...); "nuevo" para crear. */
@@ -47,11 +49,19 @@ function EtiquetaDificultad({ dificultad }: { dificultad: Dificultad }) {
 interface InfoPregunta {
   texto: string
   dificultad: Dificultad
+  tipoPregunta: Pregunta['tipoPregunta']
 }
 
 function infoDe(pregunta: Pregunta): InfoPregunta {
-  return { texto: textoPlanoDe(pregunta.enunciadoHtml, 140), dificultad: pregunta.dificultad }
+  return { texto: textoPlanoDe(pregunta.enunciadoHtml, 140), dificultad: pregunta.dificultad, tipoPregunta: pregunta.tipoPregunta }
 }
+
+const MAX_DESCRIPCION = 300
+
+const TIPOS_EXAMEN: { valor: TipoExamen; ayuda: string }[] = [
+  { valor: 'PRACTICA_TEMA', ayuda: 'Para practicar un tema concreto.' },
+  { valor: 'SIMULACRO_COMPLETO', ayuda: 'Mezcla todos los temas, como el examen real.' },
+]
 
 interface FormularioBasico {
   universidadId: string
@@ -61,6 +71,8 @@ interface FormularioBasico {
   tipoSeleccion: TipoSeleccion
   navegacion: NavegacionExamen
   permitePausa: boolean
+  tipo: TipoExamen
+  descripcion: string
 }
 
 const FORMULARIO_VACIO: FormularioBasico = {
@@ -71,6 +83,8 @@ const FORMULARIO_VACIO: FormularioBasico = {
   tipoSeleccion: 'FIJA',
   navegacion: 'LIBRE',
   permitePausa: false,
+  tipo: 'SIMULACRO_COMPLETO',
+  descripcion: '',
 }
 
 function formularioDesde(examen: ExamenResumen): FormularioBasico {
@@ -82,6 +96,8 @@ function formularioDesde(examen: ExamenResumen): FormularioBasico {
     tipoSeleccion: examen.tipoSeleccion,
     navegacion: examen.navegacion,
     permitePausa: examen.permitePausa,
+    tipo: examen.tipo,
+    descripcion: examen.descripcion ?? '',
   }
 }
 
@@ -314,6 +330,8 @@ export default function EditorExamenPage() {
       tipoSeleccion: formulario.tipoSeleccion,
       navegacion: formulario.navegacion,
       permitePausa: formulario.permitePausa,
+      tipo: formulario.tipo,
+      descripcion: formulario.descripcion.trim() || null,
     }
   }
 
@@ -371,6 +389,7 @@ export default function EditorExamenPage() {
 
   function agregarPregunta(pregunta: Pregunta) {
     if (preguntasElegidas.some((p) => p.preguntaId === pregunta.id)) return
+    setInfoPreguntas((prev) => ({ ...prev, [pregunta.id]: infoDe(pregunta) }))
     cambiarPreguntas((prev) => [...prev, { preguntaId: pregunta.id, orden: prev.length + 1, puntajeAsignado: 0 }])
   }
 
@@ -384,6 +403,7 @@ export default function EditorExamenPage() {
   }
 
   const esFija = formulario.tipoSeleccion === 'FIJA'
+  const tieneDesarrollo = preguntasElegidas.some((p) => infoPreguntas[p.preguntaId]?.tipoPregunta === 'DESARROLLO')
   const puntajeTotal = Number(formulario.puntajeTotal)
   const cantidadItems = esFija ? preguntasElegidas.length : areas.length
   const puntajeAsignado = esFija ? preguntasElegidas.reduce((acc, p) => acc + p.puntajeAsignado, 0) : areas.reduce((acc, a) => acc + a.puntajeAsignado, 0)
@@ -526,6 +546,49 @@ export default function EditorExamenPage() {
               <Input placeholder="Ej. Simulacro UNMSM - Área A" value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} />
             </Field>
 
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">Tipo de examen</span>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {TIPOS_EXAMEN.map((t) => {
+                  const elegido = formulario.tipo === t.valor
+                  return (
+                    <button
+                      key={t.valor}
+                      type="button"
+                      aria-pressed={elegido}
+                      onClick={() => setFormulario({ ...formulario, tipo: t.valor })}
+                      className={cn(
+                        'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors',
+                        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600',
+                        elegido ? 'border-primary-600 bg-primary-50/70 ring-1 ring-primary-600' : 'border-slate-200 bg-white hover:bg-slate-50',
+                      )}
+                    >
+                      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', elegido ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500')}>
+                        <Icon name={ETIQUETA_TIPO[t.valor].icono} size={20} />
+                      </span>
+                      <span>
+                        <span className={cn('block text-sm font-semibold', elegido ? 'text-primary-700' : 'text-slate-900')}>{ETIQUETA_TIPO[t.valor].texto}</span>
+                        <span className="mt-0.5 block text-xs text-slate-500">{t.ayuda}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <Field label="Descripción (opcional)" hint="Cuéntale al alumno qué va a practicar." className="md:col-span-2">
+              <Textarea
+                rows={2}
+                maxLength={MAX_DESCRIPCION}
+                placeholder="Ej. Practica am/is/are en oraciones afirmativas, negativas y preguntas."
+                value={formulario.descripcion}
+                onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
+              />
+              <span className="self-end text-xs text-slate-500">
+                {formulario.descripcion.length} / {MAX_DESCRIPCION}
+              </span>
+            </Field>
+
             <Field label="Duración (minutos)" hint="Al acabarse el tiempo, el simulacro se entrega automáticamente.">
               <Input type="number" min="1" value={formulario.duracionMinutos} onChange={(e) => setFormulario({ ...formulario, duracionMinutos: e.target.value })} />
             </Field>
@@ -629,6 +692,13 @@ export default function EditorExamenPage() {
 
       {paso === 2 && examen && (
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          {/* Por areas no se sabe de antemano que tocara: el aviso va siempre. En fijo, solo si eligio alguna. */}
+          {(!esFija || tieneDesarrollo) && (
+            <Alert tone="info" className="lg:col-span-12">
+              Las preguntas de desarrollo las calificas tú, así que solo se toman cuando <strong>asignas este examen a un grupo</strong>. Si
+              un alumno lo rinde por su cuenta, esas preguntas se omiten.
+            </Alert>
+          )}
           {esFija ? (
             <SeccionCard titulo="Banco de preguntas" descripcion="Solo aparecen las preguntas publicadas. Pulsa una para agregarla." className="lg:col-span-7">
               <div className="flex flex-col gap-3 p-5">
@@ -829,7 +899,8 @@ export default function EditorExamenPage() {
               <Dato etiqueta="Programa">{universidadNombre}</Dato>
               <Dato etiqueta="Duración">{formatearDuracion(Number(formulario.duracionMinutos) * 60)}</Dato>
               <Dato etiqueta="Puntaje total">{puntajeTotal} pts</Dato>
-              <Dato etiqueta="Tipo">{esFija ? 'Fijo' : 'Aleatorio por área'}</Dato>
+              <Dato etiqueta="Tipo de examen">{ETIQUETA_TIPO[formulario.tipo].texto}</Dato>
+              <Dato etiqueta="Selección">{esFija ? 'Fija' : 'Aleatoria por área'}</Dato>
               <Dato etiqueta="Composición">{esFija ? `${preguntasElegidas.length} preguntas` : `${areas.length} áreas`}</Dato>
               <Dato etiqueta="Navegación">
                 {formulario.navegacion === 'LIBRE' ? 'Libre' : 'Secuencial'} · {formulario.permitePausa ? 'con pausa' : 'sin pausa'}

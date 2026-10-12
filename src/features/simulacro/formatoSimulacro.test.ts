@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatearDuracionLarga, formatearPuntos, formatearTiempo, tieneRespuesta } from './formatoSimulacro'
+import { formatearDuracionLarga, formatearPuntos, formatearTiempo, formatearTiempoSugerido, tieneRespuesta } from './formatoSimulacro'
 
 describe('formatearTiempo', () => {
   it('usa mm:ss por debajo de una hora', () => {
@@ -21,6 +21,15 @@ describe('formatearDuracionLarga', () => {
 
   it('muestra horas cuando corresponde', () => {
     expect(formatearDuracionLarga(3725)).toBe('1h 02m')
+  })
+})
+
+describe('formatearTiempoSugerido', () => {
+  it('usa segundos por debajo del minuto y minutos u horas desde ahi', () => {
+    expect(formatearTiempoSugerido(45)).toBe('45 s')
+    expect(formatearTiempoSugerido(90)).toBe('2 min')
+    expect(formatearTiempoSugerido(1800)).toBe('30 min')
+    expect(formatearTiempoSugerido(2400)).toBe('40 min')
   })
 })
 

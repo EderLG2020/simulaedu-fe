@@ -6,6 +6,7 @@ import { Alert, Badge, Button, Card, cn, EmptyState, Icon, Input, PageHeader, Se
 import { useAuth } from '../../hooks/useAuth'
 import { formatearDuracion } from '../../lib/formato'
 import { useGestionExamenes } from './gestion'
+import { ETIQUETA_TIPO } from './resumenExamenes'
 
 /** Lista de examenes (admin y docente). Crear/editar/publicar vive en EditorExamenPage, a
  * pantalla completa: la composicion necesita mas espacio que un panel lateral. Sin "Eliminar"
@@ -134,7 +135,8 @@ export default function GestionExamenesPage() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold text-slate-900 group-hover:text-primary-600">{examen.nombre}</div>
                       <div className="mt-0.5 truncate text-xs text-slate-500">
-                        {examen.universidadNombre} · {fijo ? 'Fijo' : 'Aleatorio por área'}
+                        {examen.universidadNombre} · <span className="font-semibold text-slate-700">{ETIQUETA_TIPO[examen.tipo].texto}</span> ·{' '}
+                        {fijo ? 'Fijo' : 'Aleatorio por área'}
                       </div>
                     </div>
 

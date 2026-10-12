@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { ORDEN_TIPOS_PROGRAMA, requierePlanDePago, TIPOS_PROGRAMA } from '../../lib/programas'
 import StudentHeader from '../home/StudentHeader'
 import Reveal from '../landing/Reveal'
+import { resumenPorTipo } from './resumenExamenes'
 
 interface EstiloMonograma {
   contenedor: string
@@ -81,10 +82,10 @@ export default function EligeUniversidadPage() {
       .catch(() => setError('No se pudieron cargar las universidades disponibles.'))
   }, [])
 
-  const conteoPorUniversidad = useMemo(() => {
-    const mapa = new Map<string, number>()
+  const examenesPorUniversidad = useMemo(() => {
+    const mapa = new Map<string, ExamenResumen[]>()
     for (const examen of examenes ?? []) {
-      mapa.set(examen.universidadId, (mapa.get(examen.universidadId) ?? 0) + 1)
+      mapa.set(examen.universidadId, [...(mapa.get(examen.universidadId) ?? []), examen])
     }
     return mapa
   }, [examenes])
@@ -168,7 +169,7 @@ export default function EligeUniversidadPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {programas.map((u, i) => {
                     const esObjetivo = u.id === universidadObjetivoId
-                    const cantidadExamenes = conteoPorUniversidad.get(u.id) ?? 0
+                    const examenesDelPrograma = examenesPorUniversidad.get(u.id) ?? []
                     const estilo = ESTILOS_POR_SIGLAS[u.siglas] ?? (tipo === 'ADMISION' ? ESTILO_POR_DEFECTO : ESTILOS_POR_TIPO[tipo])
                     return (
                       <Reveal key={u.id} delayMs={i * 50}>
@@ -188,10 +189,8 @@ export default function EligeUniversidadPage() {
                           <div className="min-w-0 flex-1">
                             <h3 className="line-clamp-2 font-display text-sm leading-snug font-bold text-slate-900 sm:text-base">{u.nombre}</h3>
                             <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
-                              {cantidadExamenes > 0 ? (
-                                <span className="font-semibold text-slate-700">
-                                  {cantidadExamenes} {cantidadExamenes === 1 ? 'examen' : 'examenes'}
-                                </span>
+                              {examenesDelPrograma.length > 0 ? (
+                                <span className="font-semibold text-slate-700">{resumenPorTipo(examenesDelPrograma)}</span>
                               ) : (
                                 <span>Sin examenes aún</span>
                               )}

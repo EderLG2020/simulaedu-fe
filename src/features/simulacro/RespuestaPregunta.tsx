@@ -3,6 +3,12 @@ import { CLASE_HTML_ENRIQUECIDO, LETRAS } from './estilosSimulacro'
 import { alternativasOrdenadas } from './formatoSimulacro'
 import { htmlSeguro } from '../../lib/html'
 
+/** Formato que califica CalculadoraPuntajeService (indices de columnaIzquierda/columnaDerecha). */
+interface ParElegido {
+  izquierda: number
+  derecha: number
+}
+
 interface Props {
   pregunta: PreguntaSimulacro
   onCambiar: (respuestaDada: Record<string, unknown>) => void
@@ -80,6 +86,101 @@ export default function RespuestaPregunta({ pregunta, onCambiar, onCambiarConDeb
           />
           <span className="text-xs text-slate-500">Se guarda automáticamente mientras escribes.</span>
         </label>
+      )
+    }
+
+    case 'DESARROLLO': {
+      const texto = (pregunta.respuestaDada.texto as string | null | undefined) ?? ''
+      const limite = Number(pregunta.metadataTipo.limiteCaracteres) || undefined
+      const idCampo = `desarrollo-${pregunta.respuestaSimulacroId}`
+      return (
+        <div className="flex flex-col gap-2">
+          <label htmlFor={idCampo} className="text-sm font-semibold text-slate-700">
+            Tu respuesta
+          </label>
+          <textarea
+            id={idCampo}
+            rows={10}
+            maxLength={limite}
+            value={texto}
+            placeholder="Escribe tu respuesta aquí..."
+            // Solo espacios cuenta como en blanco (texto null), igual que si no se hubiera escrito nada.
+            onChange={(e) => onCambiarConDebounce({ texto: e.target.value.trim() === '' ? null : e.target.value })}
+            className="min-h-56 w-full resize-y rounded-xl border-2 border-slate-200 bg-white p-4 text-[15px] leading-relaxed text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-primary-600 focus:ring-4 focus:ring-primary-50"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-base" aria-hidden="true">
+                rate_review
+              </span>
+              Tu docente revisará y calificará esta respuesta. Se guarda automáticamente.
+            </span>
+            {limite !== undefined && (
+              <span className={texto.length >= limite * 0.9 ? 'font-semibold text-amber-600' : undefined}>
+                {texto.length} / {limite}
+              </span>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    case 'EMPAREJAMIENTO': {
+      const izquierda = (pregunta.metadataTipo.columnaIzquierda as string[] | undefined) ?? []
+      const derecha = (pregunta.metadataTipo.columnaDerecha as string[] | undefined) ?? []
+      const pares = ((pregunta.respuestaDada.pares as ParElegido[] | undefined) ?? []).map((p) => ({
+        izquierda: Number(p.izquierda),
+        derecha: Number(p.derecha),
+      }))
+      const usadas = new Set(pares.map((p) => p.derecha))
+
+      const elegir = (indiceIzquierda: number, valor: string) => {
+        const resto = pares.filter((p) => p.izquierda !== indiceIzquierda)
+        const nuevos = valor === '' ? resto : [...resto, { izquierda: indiceIzquierda, derecha: Number(valor) }]
+        onCambiar({ pares: nuevos.sort((a, b) => a.izquierda - b.izquierda) })
+      }
+
+      return (
+        <div className="flex flex-col gap-3">
+          <p className="text-xs font-semibold text-slate-500">Elige, para cada elemento, su pareja de la lista.</p>
+          <ul className="flex flex-col gap-2">
+            {izquierda.map((textoIzquierda, i) => {
+              const idSelector = `${pregunta.respuestaSimulacroId}-par-${i}`
+              const elegida = pares.find((p) => p.izquierda === i)?.derecha
+              return (
+                <li
+                  key={i}
+                  className={`flex flex-col gap-2 rounded-xl border-2 px-3 py-2.5 transition sm:flex-row sm:items-center sm:gap-4 sm:px-4 ${
+                    elegida !== undefined ? 'border-primary-600 bg-primary-50/60' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <label htmlFor={idSelector} className="flex min-w-0 flex-1 items-center gap-3 text-[15px] font-medium text-slate-900">
+                    <span
+                      aria-hidden="true"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 font-display text-sm font-bold text-primary-600"
+                    >
+                      {i + 1}
+                    </span>
+                    {textoIzquierda}
+                  </label>
+                  <select
+                    id={idSelector}
+                    value={elegida === undefined ? '' : String(elegida)}
+                    onChange={(e) => elegir(i, e.target.value)}
+                    className="h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-50 sm:w-72"
+                  >
+                    <option value="">Elige...</option>
+                    {derecha.map((textoDerecha, j) => (
+                      <option key={j} value={j}>
+                        {`${LETRAS[j] ?? j + 1}. ${textoDerecha}${usadas.has(j) && j !== elegida ? ' (ya elegida)' : ''}`}
+                      </option>
+                    ))}
+                  </select>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       )
     }
 

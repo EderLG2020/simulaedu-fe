@@ -29,8 +29,28 @@ function examen(parcial: Partial<ExamenResumen>): ExamenResumen {
     preguntas: [],
     areas: [{ id: 'a-1', cursoId: 'c-mat', cursoNombre: 'Matematica', temaId: null, cantidadPreguntas: 2, dificultadObjetivo: 'MIXTA', puntajeAsignado: 100 }],
     disponible: true,
+    tipo: 'SIMULACRO_COMPLETO',
+    descripcion: null,
+    temasCubiertos: [{ cursoId: 'c-mat', cursoNombre: 'Matematica', temaId: null, temaNombre: null }],
+    cantidadPreguntas: 2,
     ...parcial,
   }
+}
+
+function tema(cursoId: string, cursoNombre: string, temaNombre: string) {
+  return { cursoId, cursoNombre, temaId: `t-${temaNombre}`, temaNombre }
+}
+
+function practica(id: string, temaNombre: string, cursoId = 'c-mat', cursoNombre = 'Matematica'): ExamenResumen {
+  return examen({
+    id,
+    nombre: `Práctica: ${temaNombre}`,
+    tipo: 'PRACTICA_TEMA',
+    descripcion: `Practica ${temaNombre}.`,
+    temasCubiertos: [tema(cursoId, cursoNombre, temaNombre)],
+    cantidadPreguntas: 8,
+    duracionSeg: 900,
+  })
 }
 
 const mocks = vi.hoisted(() => ({
@@ -135,26 +155,75 @@ describe('AsignaturasExamenesPage', () => {
     expect(screen.getByRole('button', { name: /No disponible/ })).toBeDisabled()
   })
 
-  it('muestra los examenes de seleccion fija (sin areas) en su propia asignatura', async () => {
+  it('separa los simulacros completos (primero) de las practicas por tema', async () => {
     mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
-    mocks.examenes.mockResolvedValue([
-      examen({}),
-      examen({ id: 'ex-fijo', nombre: 'Simulacro Fijo UNI', areas: [], preguntas: [{ preguntaId: 'p-1', orden: 1, puntajeAsignado: 100 }] }),
-    ])
+    mocks.examenes.mockResolvedValue([practica('p-1', 'Algebra'), examen({ descripcion: 'Todo el temario de admision.' }), practica('p-2', 'Geometria')])
     renderPagina()
 
-    fireEvent.click(await screen.findByRole('button', { name: /Simulacro completo/ }))
-
-    expect(await screen.findByRole('article', { name: 'Simulacro Fijo UNI' })).toBeInTheDocument()
-    expect(screen.queryByText('Sin examenes publicados todavia')).not.toBeInTheDocument()
+    const simulacros = await screen.findByRole('region', { name: 'Simulacros completos' })
+    const practicas = screen.getByRole('region', { name: 'Prácticas por tema' })
+    expect(within(simulacros).getByRole('article', { name: 'Simulacro General UNI 2026' })).toHaveTextContent('Todo el temario de admision.')
+    expect(within(practicas).getAllByRole('article').map((a) => a.getAttribute('aria-label'))).toEqual(['Práctica: Algebra', 'Práctica: Geometria'])
+    // Los simulacros van antes que las practicas.
+    expect(simulacros.compareDocumentPosition(practicas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByText('1 simulacro · 2 prácticas')).toBeInTheDocument()
   })
 
-  it('con una sola asignatura muestra sus examenes directo, sin selector de asignaturas', async () => {
+  it('cada examen muestra su cantidad de preguntas, duracion y temas', async () => {
     mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    mocks.examenes.mockResolvedValue([practica('p-1', 'Algebra')])
     renderPagina()
 
-    expect(await screen.findByRole('article', { name: 'Simulacro General UNI 2026' })).toBeInTheDocument()
-    expect(screen.queryByRole('navigation', { name: 'Asignaturas' })).not.toBeInTheDocument()
+    const tarjeta = await screen.findByRole('article', { name: 'Práctica: Algebra' })
+    expect(tarjeta).toHaveTextContent('8 preguntas')
+    expect(tarjeta).toHaveTextContent('15 min')
+    expect(within(tarjeta).getByText('Algebra')).toBeInTheDocument()
+  })
+
+  it('oculta la seccion que no tiene examenes', async () => {
+    mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    mocks.examenes.mockResolvedValue([practica('p-1', 'Algebra')])
+    renderPagina()
+
+    expect(await screen.findByRole('region', { name: 'Prácticas por tema' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Simulacros completos' })).not.toBeInTheDocument()
+    expect(screen.getByText('1 práctica')).toBeInTheDocument()
+  })
+
+  it('muestra los primeros temas y resume el resto como +N temas', async () => {
+    mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    const temas = ['Aritmetica', 'Algebra', 'Geometria', 'Trigonometria', 'Sucesiones', 'Edades'].map((t) => tema('c-mat', 'Matematica', t))
+    mocks.examenes.mockResolvedValue([examen({ temasCubiertos: temas })])
+    renderPagina()
+
+    const tarjeta = await screen.findByRole('article', { name: 'Simulacro General UNI 2026' })
+    expect(within(tarjeta).getByText('Trigonometria')).toBeInTheDocument()
+    expect(within(tarjeta).queryByText('Sucesiones')).not.toBeInTheDocument()
+    expect(within(tarjeta).getByText('+2 temas')).toBeInTheDocument()
+  })
+
+  it('con practicas de varios cursos ofrece filtrarlas por curso', async () => {
+    mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    mocks.examenes.mockResolvedValue([practica('p-1', 'Algebra'), practica('p-2', 'Sucesiones', 'c-rm', 'Razonamiento Matematico')])
+    renderPagina()
+
+    const filtros = await screen.findByRole('navigation', { name: 'Filtrar prácticas por curso' })
+    fireEvent.click(within(filtros).getByRole('button', { name: /Razonamiento Matematico/ }))
+
+    const practicas = screen.getByRole('region', { name: 'Prácticas por tema' })
+    expect(within(practicas).getAllByRole('article').map((a) => a.getAttribute('aria-label'))).toEqual(['Práctica: Sucesiones'])
+
+    fireEvent.click(within(filtros).getByRole('button', { name: /Todos/ }))
+    expect(within(practicas).getAllByRole('article')).toHaveLength(2)
+  })
+
+  it('con practicas de un solo curso no muestra filtros', async () => {
+    mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    mocks.examenes.mockResolvedValue([practica('p-1', 'Algebra'), practica('p-2', 'Geometria')])
+    renderPagina()
+
+    expect(await screen.findByRole('region', { name: 'Prácticas por tema' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Filtrar prácticas por curso' })).not.toBeInTheDocument()
   })
 
   it('muestra el error de inicio dentro de la tarjeta del examen', async () => {

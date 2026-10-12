@@ -1,4 +1,5 @@
 import type { AlternativaSimulacro, PreguntaSimulacro } from '../../api/simulacrosApi'
+import { formatearDuracion } from '../../lib/formato'
 
 const dosDigitos = (n: number) => Math.floor(n).toString().padStart(2, '0')
 
@@ -19,6 +20,11 @@ export function formatearDuracionLarga(segundos: number): string {
   if (h > 0) return `${h}h ${dosDigitos(m)}m`
   if (m > 0) return `${m}m ${dosDigitos(s)}s`
   return `${s}s`
+}
+
+/** Tiempo sugerido de una pregunta: "45 s" si es menos de un minuto, si no "30 min" / "1h 15min". */
+export function formatearTiempoSugerido(segundos: number): string {
+  return segundos < 60 ? `${segundos} s` : formatearDuracion(segundos)
 }
 
 export function formatearPuntos(puntos: number): string {

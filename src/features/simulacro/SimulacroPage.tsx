@@ -14,7 +14,7 @@ import {
 } from '../../api/simulacrosApi'
 import ConfirmarFinalizarModal from './ConfirmarFinalizarModal'
 import { CLASE_HTML_ENRIQUECIDO } from './estilosSimulacro'
-import { alternativasOrdenadas, formatearTiempo, tieneRespuesta } from './formatoSimulacro'
+import { alternativasOrdenadas, formatearTiempo, formatearTiempoSugerido, tieneRespuesta } from './formatoSimulacro'
 import NavegadorPreguntas from './NavegadorPreguntas'
 import RespuestaPregunta from './RespuestaPregunta'
 import { htmlSeguro } from '../../lib/html'
@@ -247,7 +247,8 @@ export default function SimulacroPage() {
   const manejarTeclaActual = (e: KeyboardEvent) => {
     if (!preguntaActual || pausado || confirmandoFinalizar || e.ctrlKey || e.metaKey || e.altKey) return
     const destino = e.target as HTMLElement | null
-    if (destino && (destino.tagName === 'INPUT' || destino.tagName === 'TEXTAREA' || destino.isContentEditable)) return
+    // SELECT: en emparejamiento las flechas cambian la opcion elegida, no de pregunta.
+    if (destino && (['INPUT', 'TEXTAREA', 'SELECT'].includes(destino.tagName) || destino.isContentEditable)) return
 
     if (e.key === 'ArrowRight') return irAPregunta(indiceActual + 1)
     if (e.key === 'ArrowLeft') return irAPregunta(indiceActual - 1)
@@ -475,7 +476,7 @@ export default function SimulacroPage() {
                         {preguntaActual.tiempoSugeridoSeg && (
                           <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">schedule</span>
-                            Tiempo sugerido: {preguntaActual.tiempoSugeridoSeg} s
+                            Tiempo sugerido: {formatearTiempoSugerido(preguntaActual.tiempoSugeridoSeg)}
                           </span>
                         )}
                         {valorPregunta !== undefined && (

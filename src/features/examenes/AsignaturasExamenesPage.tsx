@@ -6,17 +6,11 @@ import { iniciarSimulacro } from '../../api/simulacrosApi'
 import { listarUniversidades, type UniversidadResumen } from '../../api/universidadesApi'
 import { obtenerPerfil, seleccionarUniversidadObjetivo } from '../../api/usuariosApi'
 import { useAuth } from '../../hooks/useAuth'
-import { formatearDuracion } from '../../lib/formato'
 import { TIPOS_PROGRAMA } from '../../lib/programas'
-import { formatearFraccion, penalizacionDe } from '../../lib/reglasCalificacion'
 import StudentHeader from '../home/StudentHeader'
 import Reveal from '../landing/Reveal'
-
-interface Asignatura {
-  cursoId: string
-  cursoNombre: string
-  examenes: ExamenResumen[]
-}
+import { resumenPorTipo } from './resumenExamenes'
+import TarjetaExamen, { type MotivoBloqueo } from './TarjetaExamen'
 
 const ICONOS_POR_CURSO: Record<string, string> = {
   Matematica: 'calculate',
@@ -29,8 +23,19 @@ const ICONOS_POR_CURSO: Record<string, string> = {
 
 const ICONO_POR_DEFECTO = 'auto_stories'
 
-/** Los examenes de seleccion fija no tienen areas (cursos): se agrupan aparte para que no desaparezcan. */
-const ASIGNATURA_SIMULACRO_COMPLETO = { cursoId: 'simulacro-completo', cursoNombre: 'Simulacro completo', icono: 'assignment' }
+interface CursoDePracticas {
+  cursoId: string
+  cursoNombre: string
+  cantidad: number
+}
+
+/** Curso principal de una practica: el del primer tema que cubre. */
+function cursoDe(examen: ExamenResumen): CursoDePracticas | null {
+  const tema = examen.temasCubiertos[0]
+  return tema ? { cursoId: tema.cursoId, cursoNombre: tema.cursoNombre, cantidad: 0 } : null
+}
+
+const porNombre = (a: ExamenResumen, b: ExamenResumen) => a.nombre.localeCompare(b.nombre)
 
 export default function AsignaturasExamenesPage() {
   const { universidadId } = useParams<{ universidadId: string }>()
@@ -42,7 +47,8 @@ export default function AsignaturasExamenesPage() {
   const [examenes, setExamenes] = useState<ExamenResumen[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [errorInicio, setErrorInicio] = useState<{ examenId: string; mensaje: string } | null>(null)
-  const [asignaturaActivaId, setAsignaturaActivaId] = useState<string | null>(null)
+  /** null = todas las practicas. */
+  const [cursoFiltroId, setCursoFiltroId] = useState<string | null>(null)
   const [iniciandoId, setIniciandoId] = useState<string | null>(null)
   const [fijandoMeta, setFijandoMeta] = useState(false)
 
@@ -55,7 +61,7 @@ export default function AsignaturasExamenesPage() {
     if (!universidadId) return
     setUniversidad(null)
     setExamenes(null)
-    setAsignaturaActivaId(null)
+    setCursoFiltroId(null)
     setErrorInicio(null)
     Promise.all([listarUniversidades(), listarExamenesPorUniversidad(universidadId)])
       .then(([todas, examenesUniversidad]) => {
@@ -66,31 +72,22 @@ export default function AsignaturasExamenesPage() {
       .catch(() => setError('No se pudo cargar la informacion de esta universidad.'))
   }, [universidadId])
 
-  const asignaturas = useMemo<Asignatura[]>(() => {
-    if (!examenes) return []
-    const mapa = new Map<string, Asignatura>()
-    const sinAreas = examenes.filter((e) => e.areas.length === 0)
-    for (const examen of examenes) {
-      for (const area of examen.areas) {
-        const existente = mapa.get(area.cursoId)
-        if (existente) {
-          if (!existente.examenes.some((e) => e.id === examen.id)) existente.examenes.push(examen)
-        } else {
-          mapa.set(area.cursoId, { cursoId: area.cursoId, cursoNombre: area.cursoNombre, examenes: [examen] })
-        }
-      }
-    }
-    const porCurso = Array.from(mapa.values()).sort((a, b) => a.cursoNombre.localeCompare(b.cursoNombre))
-    if (sinAreas.length === 0) return porCurso
-    const { cursoId, cursoNombre } = ASIGNATURA_SIMULACRO_COMPLETO
-    return [{ cursoId, cursoNombre, examenes: sinAreas }, ...porCurso]
-  }, [examenes])
+  const simulacros = useMemo(() => (examenes ?? []).filter((e) => e.tipo === 'SIMULACRO_COMPLETO').sort(porNombre), [examenes])
+  const practicas = useMemo(() => (examenes ?? []).filter((e) => e.tipo === 'PRACTICA_TEMA').sort(porNombre), [examenes])
 
-  useEffect(() => {
-    if (asignaturas.length > 0 && !asignaturaActivaId) {
-      setAsignaturaActivaId(asignaturas[0].cursoId)
+  // Filtros por curso: solo tienen sentido si las practicas son de mas de un curso (caso admision).
+  const cursosDePracticas = useMemo(() => {
+    const mapa = new Map<string, CursoDePracticas>()
+    for (const practica of practicas) {
+      const curso = cursoDe(practica)
+      if (!curso) continue
+      const existente = mapa.get(curso.cursoId) ?? { ...curso }
+      existente.cantidad += 1
+      mapa.set(curso.cursoId, existente)
     }
-  }, [asignaturas, asignaturaActivaId])
+    return Array.from(mapa.values()).sort((a, b) => a.cursoNombre.localeCompare(b.cursoNombre))
+  }, [practicas])
+  const practicasVisibles = cursoFiltroId === null ? practicas : practicas.filter((p) => cursoDe(p)?.cursoId === cursoFiltroId)
 
   async function handleIniciar(examen: ExamenResumen) {
     setErrorInicio(null)
@@ -120,7 +117,6 @@ export default function AsignaturasExamenesPage() {
   }
 
   const cargando = universidad === null || examenes === null
-  const asignaturaActiva = asignaturas.find((a) => a.cursoId === asignaturaActivaId) ?? null
   const esUniversidadObjetivo = usuario?.universidadObjetivoId === universidadId
   // RN-02 (mismo criterio que SimulacroService.validarUniversidadObjetivo): plan con limite + otra meta ya fijada.
   // V20: idiomas y tecnologia no cuentan como universidad meta; solo se rinden con un plan que
@@ -131,6 +127,26 @@ export default function AsignaturasExamenesPage() {
   const bloqueadoPorPlan = planLimita && !!usuario?.universidadObjetivoId && !esUniversidadObjetivo
   const fijaraMetaAlIniciar = planLimita && !usuario?.universidadObjetivoId
   const universidadMeta = universidades.find((u) => u.id === usuario?.universidadObjetivoId)
+
+  function bloqueoDe(examen: ExamenResumen): MotivoBloqueo {
+    if (bloqueadoPorPrograma) return 'programa'
+    if (bloqueadoPorPlan) return 'plan'
+    return examen.disponible ? null : 'sin-preguntas'
+  }
+
+  function tarjeta(examen: ExamenResumen, variante: 'simulacro' | 'practica') {
+    return (
+      <TarjetaExamen
+        key={examen.id}
+        examen={examen}
+        variante={variante}
+        bloqueo={bloqueoDe(examen)}
+        iniciando={iniciandoId === examen.id}
+        error={errorInicio?.examenId === examen.id ? errorInicio.mensaje : null}
+        onIniciar={() => handleIniciar(examen)}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-body text-slate-900">
@@ -178,10 +194,7 @@ export default function AsignaturasExamenesPage() {
                       )}
                     </div>
                     <h1 className="font-display text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{universidad.nombre}</h1>
-                    <p className="mt-1 text-sm text-slate-700">
-                      {examenes.length} {examenes.length === 1 ? 'examen publicado' : 'examenes publicados'}
-                      {asignaturas.length > 1 && ` en ${asignaturas.length} asignaturas`}
-                    </p>
+                    {examenes.length > 0 && <p className="mt-1 text-sm text-slate-700">{resumenPorTipo(examenes)}</p>}
                   </div>
                 </div>
 
@@ -253,7 +266,7 @@ export default function AsignaturasExamenesPage() {
               </div>
             )}
 
-            {asignaturas.length === 0 ? (
+            {examenes.length === 0 ? (
               <div className="flex flex-col items-center rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-50 text-primary-600">
                   <span className="material-symbols-outlined text-3xl">hourglass_empty</span>
@@ -271,146 +284,67 @@ export default function AsignaturasExamenesPage() {
                 </Link>
               </div>
             ) : (
-              <>
-                {/* Con una sola asignatura el selector no aporta nada: se va directo a sus examenes. */}
-                {asignaturas.length > 1 && (
-                  <nav aria-label="Asignaturas" className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-1">
-                    {asignaturas.map((a) => {
-                      const activa = a.cursoId === asignaturaActivaId
-                      return (
-                        <button
-                          key={a.cursoId}
-                          type="button"
-                          aria-pressed={activa}
-                          onClick={() => setAsignaturaActivaId(a.cursoId)}
-                          className={`inline-flex shrink-0 items-center gap-2 rounded-full border py-2 pr-2.5 pl-3.5 text-sm font-semibold transition ${
-                            activa
-                              ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-primary-600 hover:text-primary-600'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-lg" aria-hidden="true">
-                            {a.cursoId === ASIGNATURA_SIMULACRO_COMPLETO.cursoId
-                              ? ASIGNATURA_SIMULACRO_COMPLETO.icono
-                              : (ICONOS_POR_CURSO[a.cursoNombre] ?? ICONO_POR_DEFECTO)}
-                          </span>
-                          {a.cursoNombre}
-                          <span
-                            className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[11px] font-bold ${
-                              activa ? 'bg-white/20 text-white' : 'bg-slate-50 text-slate-700'
-                            }`}
-                          >
-                            {a.examenes.length}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </nav>
-                )}
-
-                {asignaturaActiva && (
-                  <section aria-labelledby="titulo-examenes">
-                    <h2 id="titulo-examenes" className="mb-4 font-display text-lg font-bold text-slate-900">
-                      {asignaturas.length > 1 ? `Examenes de ${asignaturaActiva.cursoNombre}` : 'Examenes disponibles'}
-                    </h2>
-
-                    <div className="flex flex-col gap-4">
-                      {asignaturaActiva.examenes.map((examen) => {
-                        const penalizacion = penalizacionDe(examen.reglasCalificacion)
-                        const sinPreguntas = !examen.disponible
-                        const bloqueado = bloqueadoPorPlan || bloqueadoPorPrograma || sinPreguntas
-                        const errorTarjeta = errorInicio?.examenId === examen.id ? errorInicio.mensaje : null
-                        return (
-                          <article
-                            key={examen.id}
-                            aria-label={examen.nombre}
-                            className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-white py-5 pr-5 pl-6 shadow-sm transition sm:py-6 sm:pr-6 sm:pl-7 ${
-                              bloqueado ? 'opacity-75' : 'hover:border-primary-600/40 hover:shadow-md'
-                            }`}
-                          >
-                            <span className={`absolute inset-y-0 left-0 w-1.5 ${bloqueado ? 'bg-slate-200' : 'bg-primary-600'}`} />
-
-                            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="min-w-0">
-                                {sinPreguntas && (
-                                  <span className="mb-2 inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
-                                    Sin preguntas disponibles aún
-                                  </span>
-                                )}
-                                <h3 className="font-display text-base leading-snug font-bold text-slate-900 sm:text-lg">{examen.nombre}</h3>
-
-                                <ul className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-700">
-                                  <li className="flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-lg text-primary-600" aria-hidden="true">schedule</span>
-                                    {formatearDuracion(examen.duracionSeg)}
-                                  </li>
-                                  <li className="flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-lg text-amber-400" aria-hidden="true">grade</span>
-                                    {examen.puntajeTotal} pts
-                                  </li>
-                                  <li className="flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-lg text-slate-500" aria-hidden="true">
-                                      {examen.navegacion === 'LIBRE' ? 'swap_horiz' : 'arrow_forward'}
-                                    </span>
-                                    {examen.navegacion === 'LIBRE' ? 'Navegacion libre' : 'Navegacion secuencial'}
-                                  </li>
-                                  {examen.permitePausa && (
-                                    <li className="flex items-center gap-1.5">
-                                      <span className="material-symbols-outlined text-lg text-slate-500" aria-hidden="true">pause_circle</span>
-                                      Puedes pausar
-                                    </li>
-                                  )}
-                                  {penalizacion !== null && (
-                                    <li className="flex items-center gap-1.5 font-semibold text-rose-600">
-                                      <span className="material-symbols-outlined text-lg" aria-hidden="true">trending_down</span>
-                                      <span className="sr-only">Penalizacion por error:</span>
-                                      <span>Resta {formatearFraccion(penalizacion)} de la pregunta</span>
-                                    </li>
-                                  )}
-                                </ul>
-                              </div>
-
-                              <div className="shrink-0 sm:w-48">
-                                {bloqueado ? (
-                                  <button
-                                    type="button"
-                                    disabled
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 px-5 py-3 text-sm font-bold text-slate-700"
-                                  >
-                                    <span className="material-symbols-outlined text-base" aria-hidden="true">
-                                      lock
-                                    </span>
-                                    {bloqueadoPorPrograma ? 'Incluido en Premium' : bloqueadoPorPlan ? 'Bloqueado por tu plan' : 'No disponible'}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    disabled={iniciandoId === examen.id}
-                                    onClick={() => handleIniciar(examen)}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-accent-600 disabled:opacity-60"
-                                  >
-                                    {iniciandoId === examen.id ? 'Iniciando...' : 'Iniciar prueba'}
-                                    {iniciandoId !== examen.id && <span className="material-symbols-outlined text-base">arrow_forward</span>}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {sinPreguntas && !bloqueadoPorPlan && !bloqueadoPorPrograma && (
-                              <p className="mt-3 text-xs text-slate-700">Tu docente aún no carga suficientes preguntas para este examen. Prueba con otro.</p>
-                            )}
-                            {errorTarjeta && (
-                              <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
-                                {errorTarjeta}
-                              </p>
-                            )}
-                          </article>
-                        )
-                      })}
+              <div className="flex flex-col gap-10">
+                {simulacros.length > 0 && (
+                  <section aria-labelledby="titulo-simulacros">
+                    <div className="mb-4">
+                      <h2 id="titulo-simulacros" className="font-display text-lg font-bold text-slate-900">
+                        Simulacros completos
+                      </h2>
+                      <p className="text-sm text-slate-600">Mezclan todos los temas, como el examen real.</p>
                     </div>
+                    <div className="flex flex-col gap-4">{simulacros.map((e) => tarjeta(e, 'simulacro'))}</div>
                   </section>
                 )}
-              </>
+
+                {practicas.length > 0 && (
+                  <section aria-labelledby="titulo-practicas">
+                    <div className="mb-4">
+                      <h2 id="titulo-practicas" className="font-display text-lg font-bold text-slate-900">
+                        Prácticas por tema
+                      </h2>
+                      <p className="text-sm text-slate-600">Practica un tema concreto antes de rendir el simulacro.</p>
+                    </div>
+
+                    {cursosDePracticas.length > 1 && (
+                      <nav aria-label="Filtrar prácticas por curso" className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1">
+                        {[{ cursoId: null, cursoNombre: 'Todos', cantidad: practicas.length }, ...cursosDePracticas].map((c) => {
+                          const activo = c.cursoId === cursoFiltroId
+                          return (
+                            <button
+                              key={c.cursoId ?? 'todos'}
+                              type="button"
+                              aria-pressed={activo}
+                              onClick={() => setCursoFiltroId(c.cursoId)}
+                              className={`inline-flex shrink-0 items-center gap-2 rounded-full border py-2 pr-2.5 pl-3.5 text-sm font-semibold transition ${
+                                activo
+                                  ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                                  : 'border-slate-200 bg-white text-slate-700 hover:border-primary-600 hover:text-primary-600'
+                              }`}
+                            >
+                              {c.cursoId !== null && (
+                                <span className="material-symbols-outlined text-lg" aria-hidden="true">
+                                  {ICONOS_POR_CURSO[c.cursoNombre] ?? ICONO_POR_DEFECTO}
+                                </span>
+                              )}
+                              {c.cursoNombre}
+                              <span
+                                className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[11px] font-bold ${
+                                  activo ? 'bg-white/20 text-white' : 'bg-slate-50 text-slate-700'
+                                }`}
+                              >
+                                {c.cantidad}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </nav>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{practicasVisibles.map((e) => tarjeta(e, 'practica'))}</div>
+                  </section>
+                )}
+              </div>
             )}
           </>
         )}

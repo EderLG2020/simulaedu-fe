@@ -15,7 +15,12 @@ const mocks = vi.hoisted(() => ({ perfil: vi.fn() }))
 
 vi.mock('../../api/universidadesApi', () => ({ listarUniversidades: () => Promise.resolve([UNI, ING_A1, ING_A2]) }))
 vi.mock('../../api/examenesApi', () => ({
-  listarExamenesPublicados: () => Promise.resolve([{ id: 'ex-1', universidadId: ING_A1.id } as ExamenResumen]),
+  listarExamenesPublicados: () =>
+    Promise.resolve([
+      { id: 'ex-1', universidadId: ING_A1.id, tipo: 'SIMULACRO_COMPLETO' },
+      { id: 'ex-2', universidadId: ING_A1.id, tipo: 'PRACTICA_TEMA' },
+      { id: 'ex-3', universidadId: ING_A1.id, tipo: 'PRACTICA_TEMA' },
+    ] as ExamenResumen[]),
 }))
 vi.mock('../../api/usuariosApi', () => ({ obtenerPerfil: () => mocks.perfil() }))
 vi.mock('../home/StudentHeader', () => ({ default: () => null }))
@@ -41,12 +46,12 @@ afterEach(() => {
 })
 
 describe('EligeUniversidadPage', () => {
-  it('muestra cuantos examenes tiene cada programa', async () => {
+  it('muestra cuantos simulacros y practicas tiene cada programa', async () => {
     mocks.perfil.mockResolvedValue({ ...usuarioBase, planIncluyeProgramas: true })
     renderPagina()
 
     const a1 = await screen.findByRole('button', { name: /Inglés A1/ })
-    expect(a1).toHaveTextContent('1 examen')
+    expect(a1).toHaveTextContent('1 simulacro · 2 prácticas')
     expect(screen.getByRole('button', { name: /Inglés A2/ })).toHaveTextContent('Sin examenes aún')
   })
 

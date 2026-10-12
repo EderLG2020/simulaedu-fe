@@ -5,6 +5,8 @@ import type { ReglasCalificacion } from '../lib/reglasCalificacion'
 export type TipoSeleccion = 'FIJA' | 'ALEATORIA_POR_AREA'
 export type EstadoExamen = 'BORRADOR' | 'PUBLICADO'
 export type NavegacionExamen = 'LIBRE' | 'SECUENCIAL'
+/** Como lo ve el alumno: practica de un tema concreto o simulacro que mezcla todo el programa. */
+export type TipoExamen = 'PRACTICA_TEMA' | 'SIMULACRO_COMPLETO'
 
 export type DificultadObjetivo = 'BAJA' | 'MEDIA' | 'ALTA' | 'MIXTA'
 
@@ -16,6 +18,14 @@ export interface ExamenArea {
   cantidadPreguntas: number
   dificultadObjetivo: DificultadObjetivo
   puntajeAsignado: number
+}
+
+/** temaId/temaNombre en null: un area de "todo el curso". */
+export interface TemaCubierto {
+  cursoId: string
+  cursoNombre: string
+  temaId: string | null
+  temaNombre: string | null
 }
 
 export type { ReglasCalificacion } from '../lib/reglasCalificacion'
@@ -43,6 +53,12 @@ export interface ExamenResumen {
   areas: ExamenArea[]
   /** Si iniciar un simulacro hoy tendria preguntas (fijo con preguntas, o cada area con suficientes publicadas). */
   disponible: boolean
+  tipo: TipoExamen
+  descripcion: string | null
+  /** Calculado por el backend: temas de las areas o de las preguntas fijas, sin repetir. */
+  temasCubiertos: TemaCubierto[]
+  /** Calculado por el backend: suma de las areas o cantidad de preguntas fijas. */
+  cantidadPreguntas: number
 }
 
 export interface ExamenRequest {
@@ -54,6 +70,8 @@ export interface ExamenRequest {
   tipoSeleccion: TipoSeleccion
   reglasCalificacion?: Record<string, unknown>
   navegacion?: NavegacionExamen
+  tipo?: TipoExamen
+  descripcion?: string | null
 }
 
 export interface ListarExamenesParams {
