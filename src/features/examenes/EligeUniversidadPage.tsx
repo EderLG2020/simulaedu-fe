@@ -27,15 +27,26 @@ const ESTILOS_POR_TIPO: Record<Exclude<TipoPrograma, 'ADMISION'>, EstiloMonogram
   TECNOLOGIA: { contenedor: 'bg-emerald-600 text-white', forma: 'rounded-2xl' },
 }
 
-function EncabezadoSeccion({ tipo, bloqueada }: { tipo: TipoPrograma; bloqueada: boolean }) {
+/** Las siglas largas (ARQ-SW, CIBERSEG) no entran en el monograma con la letra normal. */
+function tamanoSiglas(siglas: string): string {
+  if (siglas.length <= 4) return 'text-sm'
+  if (siglas.length <= 6) return 'text-[11px]'
+  return 'text-[9px]'
+}
+
+function EncabezadoSeccion({ tipo, cantidad, bloqueada }: { tipo: TipoPrograma; cantidad: number; bloqueada: boolean }) {
   const info = TIPOS_PROGRAMA[tipo]
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${info.fondo}`}>
-        <span className="material-symbols-outlined text-xl">{info.icono}</span>
+        <span className="material-symbols-outlined text-xl" aria-hidden="true">
+          {info.icono}
+        </span>
       </span>
       <div>
-        <h2 className="font-display text-lg font-bold text-slate-900">{info.etiqueta}</h2>
+        <h2 className="font-display text-lg font-bold text-slate-900">
+          {info.etiqueta} <span className="text-sm font-semibold text-slate-500">({cantidad})</span>
+        </h2>
         <p className="text-xs text-slate-600">{info.descripcion}</p>
       </div>
       {bloqueada && (
@@ -105,34 +116,30 @@ export default function EligeUniversidadPage() {
       <main className="mx-auto max-w-[1100px] px-6 py-8">
         <Reveal className="relative mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-primary-50/70 blur-3xl" />
-          <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600">
-              <span className="material-symbols-outlined text-sm">school</span>
-              Paso previo a tus simulacros
+          <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-xl">
+              <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Elige qué quieres practicar</h1>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Cada programa tiene su propio banco de preguntas. Elige uno para ver sus exámenes.
+              </p>
             </div>
-            <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Elige qué quieres practicar
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              Universidades de admisión, idiomas y tecnología: cada programa tiene su propio banco de preguntas y reglas de
-              calificación. Elige uno para ver sus asignaturas y exámenes disponibles.
-            </p>
-          </div>
 
-          {universidades !== null && universidades.length > 0 && (
-            <div className="relative z-10 mt-6 max-w-md">
-              <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-lg text-slate-500">
-                search
-              </span>
-              <input
-                type="text"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar universidad, programa o siglas..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-600 focus:bg-white focus:outline-none"
-              />
-            </div>
-          )}
+            {universidades !== null && universidades.length > 0 && (
+              <div className="relative w-full md:max-w-xs">
+                <span className="material-symbols-outlined pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-lg text-slate-500">
+                  search
+                </span>
+                <input
+                  type="text"
+                  aria-label="Buscar programa"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar por nombre o siglas..."
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary-600 focus:bg-white focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
         </Reveal>
 
         {error && (
@@ -152,72 +159,70 @@ export default function EligeUniversidadPage() {
         )}
 
         {!cargando &&
-          secciones.map(({ tipo, programas }) => (
-            <section key={tipo} className="mb-8">
-              {secciones.length > 1 && <EncabezadoSeccion tipo={tipo} bloqueada={requierePlanDePago(tipo) && !incluyeProgramas} />}
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {programas.map((u, i) => {
-                  const esObjetivo = u.id === universidadObjetivoId
-                  const cantidadExamenes = conteoPorUniversidad.get(u.id) ?? 0
-                  const estilo = ESTILOS_POR_SIGLAS[u.siglas] ?? (tipo === 'ADMISION' ? ESTILO_POR_DEFECTO : ESTILOS_POR_TIPO[tipo])
-                  const bloqueado = requierePlanDePago(tipo) && !incluyeProgramas
-                  return (
-                    <Reveal key={u.id} delayMs={i * 60}>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/examenes/${u.id}`)}
-                        className={`group flex h-full w-full flex-col justify-between rounded-3xl border bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${
-                          esObjetivo ? 'border-primary-600 ring-2 ring-primary-600/20' : 'border-slate-200'
-                        }`}
-                      >
-                        <div>
-                          {esObjetivo && (
-                            <span className="mb-4 inline-flex items-center gap-1 rounded-full bg-primary-600 px-2.5 py-1 text-[11px] font-bold text-white">
-                              <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                              Tu universidad actual
-                            </span>
-                          )}
-                          {bloqueado && (
-                            <span className="mb-4 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
-                              <span className="material-symbols-outlined text-[14px]">lock</span>
-                              Plan Premium
-                            </span>
-                          )}
-                          <div className="flex items-center gap-3.5">
-                            <div
-                              className={`flex h-14 w-14 shrink-0 items-center justify-center font-display text-sm font-bold tracking-wide shadow-sm ${estilo.contenedor} ${estilo.forma}`}
-                            >
-                              {u.siglas}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">{u.siglas}</span>
-                              <h2 className="truncate font-display text-base leading-tight font-bold text-slate-900">{u.nombre}</h2>
-                            </div>
+          secciones.map(({ tipo, programas }) => {
+            // El aviso de Premium va una sola vez en el encabezado, no repetido en cada tarjeta.
+            const bloqueado = requierePlanDePago(tipo) && !incluyeProgramas
+            return (
+              <section key={tipo} className="mb-10">
+                {secciones.length > 1 && <EncabezadoSeccion tipo={tipo} cantidad={programas.length} bloqueada={bloqueado} />}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {programas.map((u, i) => {
+                    const esObjetivo = u.id === universidadObjetivoId
+                    const cantidadExamenes = conteoPorUniversidad.get(u.id) ?? 0
+                    const estilo = ESTILOS_POR_SIGLAS[u.siglas] ?? (tipo === 'ADMISION' ? ESTILO_POR_DEFECTO : ESTILOS_POR_TIPO[tipo])
+                    return (
+                      <Reveal key={u.id} delayMs={i * 50}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/examenes/${u.id}`)}
+                          className={`group flex h-full w-full items-center gap-4 rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-600/40 hover:shadow-md ${
+                            esObjetivo ? 'border-primary-600 ring-2 ring-primary-600/20' : 'border-slate-200'
+                          }`}
+                        >
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center font-display font-bold tracking-wide shadow-sm ${tamanoSiglas(u.siglas)} ${estilo.contenedor} ${estilo.forma}`}
+                          >
+                            {u.siglas}
                           </div>
-    
-                          <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
-                            <span className="material-symbols-outlined text-base text-primary-600">quiz</span>
-                            <span className="font-bold text-slate-900">{cantidadExamenes}</span>
-                            <span>{cantidadExamenes === 1 ? 'examen disponible' : 'examenes disponibles'}</span>
+
+                          <div className="min-w-0 flex-1">
+                            <h3 className="line-clamp-2 font-display text-sm leading-snug font-bold text-slate-900 sm:text-base">{u.nombre}</h3>
+                            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                              {cantidadExamenes > 0 ? (
+                                <span className="font-semibold text-slate-700">
+                                  {cantidadExamenes} {cantidadExamenes === 1 ? 'examen' : 'examenes'}
+                                </span>
+                              ) : (
+                                <span>Sin examenes aún</span>
+                              )}
+                              {esObjetivo && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-600">
+                                  <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                                  Tu meta
+                                </span>
+                              )}
+                            </p>
                           </div>
-                        </div>
-    
-                        <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-3 text-sm font-bold text-primary-600">
-                          <span>Ver asignaturas</span>
-                          <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">
-                            arrow_forward
+
+                          <span
+                            className={`material-symbols-outlined shrink-0 text-xl transition-transform group-hover:translate-x-1 ${
+                              bloqueado ? 'text-amber-500' : 'text-primary-600'
+                            }`}
+                            aria-hidden="true"
+                          >
+                            {bloqueado ? 'lock' : 'chevron_right'}
                           </span>
-                        </div>
-                      </button>
-                    </Reveal>
-                  )
-                })}
-              </div>
-            </section>
-          ))}
+                        </button>
+                      </Reveal>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })}
 
         {!cargando && (
-          <Reveal className="mt-8 flex flex-col items-start gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <Reveal className="mt-2 flex flex-col items-start gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
                 <span className="material-symbols-outlined text-xl">history</span>

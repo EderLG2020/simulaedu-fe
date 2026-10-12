@@ -79,6 +79,14 @@
     width: 100%;
     flex-direction: column;
   }
+
+  /* Paginas del alumno en celular: espacio para la barra de navegacion inferior fija
+     (StudentHeader agrega la clase), asi el final de la pagina no queda tapado. */
+  @media (width < 48rem) {
+    body.con-nav-alumno {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+  }
 }
 
 /* La hoja de Google Fonts (index.html) trae su propia regla .material-symbols-outlined con

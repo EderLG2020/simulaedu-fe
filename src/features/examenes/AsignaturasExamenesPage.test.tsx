@@ -135,6 +135,28 @@ describe('AsignaturasExamenesPage', () => {
     expect(screen.getByRole('button', { name: /No disponible/ })).toBeDisabled()
   })
 
+  it('muestra los examenes de seleccion fija (sin areas) en su propia asignatura', async () => {
+    mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    mocks.examenes.mockResolvedValue([
+      examen({}),
+      examen({ id: 'ex-fijo', nombre: 'Simulacro Fijo UNI', areas: [], preguntas: [{ preguntaId: 'p-1', orden: 1, puntajeAsignado: 100 }] }),
+    ])
+    renderPagina()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Simulacro completo/ }))
+
+    expect(await screen.findByRole('article', { name: 'Simulacro Fijo UNI' })).toBeInTheDocument()
+    expect(screen.queryByText('Sin examenes publicados todavia')).not.toBeInTheDocument()
+  })
+
+  it('con una sola asignatura muestra sus examenes directo, sin selector de asignaturas', async () => {
+    mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
+    renderPagina()
+
+    expect(await screen.findByRole('article', { name: 'Simulacro General UNI 2026' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Asignaturas' })).not.toBeInTheDocument()
+  })
+
   it('muestra el error de inicio dentro de la tarjeta del examen', async () => {
     mocks.perfil.mockResolvedValue({ ...usuarioBase, universidadObjetivoId: UNI.id, planLimitaUniversidades: true })
     mocks.iniciar.mockRejectedValue(new ApiError('REGLA_DE_NEGOCIO_INVALIDA', 'Alcanzaste el limite de simulacros este mes.'))

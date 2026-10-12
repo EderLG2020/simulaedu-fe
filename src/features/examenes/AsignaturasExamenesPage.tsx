@@ -7,6 +7,7 @@ import { listarUniversidades, type UniversidadResumen } from '../../api/universi
 import { obtenerPerfil, seleccionarUniversidadObjetivo } from '../../api/usuariosApi'
 import { useAuth } from '../../hooks/useAuth'
 import { formatearDuracion } from '../../lib/formato'
+import { TIPOS_PROGRAMA } from '../../lib/programas'
 import { formatearFraccion, penalizacionDe } from '../../lib/reglasCalificacion'
 import StudentHeader from '../home/StudentHeader'
 import Reveal from '../landing/Reveal'
@@ -27,6 +28,9 @@ const ICONOS_POR_CURSO: Record<string, string> = {
 }
 
 const ICONO_POR_DEFECTO = 'auto_stories'
+
+/** Los examenes de seleccion fija no tienen areas (cursos): se agrupan aparte para que no desaparezcan. */
+const ASIGNATURA_SIMULACRO_COMPLETO = { cursoId: 'simulacro-completo', cursoNombre: 'Simulacro completo', icono: 'assignment' }
 
 export default function AsignaturasExamenesPage() {
   const { universidadId } = useParams<{ universidadId: string }>()
@@ -65,6 +69,7 @@ export default function AsignaturasExamenesPage() {
   const asignaturas = useMemo<Asignatura[]>(() => {
     if (!examenes) return []
     const mapa = new Map<string, Asignatura>()
+    const sinAreas = examenes.filter((e) => e.areas.length === 0)
     for (const examen of examenes) {
       for (const area of examen.areas) {
         const existente = mapa.get(area.cursoId)
@@ -75,7 +80,10 @@ export default function AsignaturasExamenesPage() {
         }
       }
     }
-    return Array.from(mapa.values()).sort((a, b) => a.cursoNombre.localeCompare(b.cursoNombre))
+    const porCurso = Array.from(mapa.values()).sort((a, b) => a.cursoNombre.localeCompare(b.cursoNombre))
+    if (sinAreas.length === 0) return porCurso
+    const { cursoId, cursoNombre } = ASIGNATURA_SIMULACRO_COMPLETO
+    return [{ cursoId, cursoNombre, examenes: sinAreas }, ...porCurso]
   }, [examenes])
 
   useEffect(() => {
@@ -131,7 +139,9 @@ export default function AsignaturasExamenesPage() {
       <main className="mx-auto max-w-[1100px] px-6 py-8">
         <nav aria-label="Ruta de navegacion" className="mb-4 flex items-center gap-1.5 text-sm text-slate-700">
           <Link to="/examenes" className="flex items-center gap-1 font-medium transition hover:text-primary-600">
-            <span className="material-symbols-outlined text-base">school</span>
+            <span className="material-symbols-outlined text-base" aria-hidden="true">
+              arrow_back
+            </span>
             Programas
           </Link>
           <span className="material-symbols-outlined text-sm text-slate-200">chevron_right</span>
@@ -148,20 +158,30 @@ export default function AsignaturasExamenesPage() {
           <>
             <Reveal className="relative mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
               <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-primary-50/60 blur-3xl" />
-              <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary-600 font-display text-sm font-bold tracking-wide text-white shadow-sm">
-                    {universidad.siglas}
+              <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-sm">
+                    <span className="material-symbols-outlined text-3xl" aria-hidden="true">
+                      {TIPOS_PROGRAMA[universidad.tipo ?? 'ADMISION'].icono}
+                    </span>
                   </div>
-                  <div>
-                    {esUniversidadObjetivo && (
-                      <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-bold text-primary-600">
-                        <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                        Tu universidad actual
+                  <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold tracking-wide text-slate-700 ring-1 ring-slate-200">
+                        {universidad.siglas}
                       </span>
-                    )}
+                      {esUniversidadObjetivo && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-bold text-primary-600">
+                          <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                          Tu universidad actual
+                        </span>
+                      )}
+                    </div>
                     <h1 className="font-display text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{universidad.nombre}</h1>
-                    <p className="mt-1 text-sm text-slate-700">Simulacros y banco de preguntas de {universidad.siglas}.</p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {examenes.length} {examenes.length === 1 ? 'examen publicado' : 'examenes publicados'}
+                      {asignaturas.length > 1 && ` en ${asignaturas.length} asignaturas`}
+                    </p>
                   </div>
                 </div>
 
@@ -185,18 +205,6 @@ export default function AsignaturasExamenesPage() {
                     Ver otros programas
                   </Link>
                 </div>
-              </div>
-
-              <div className="relative z-10 mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-200 pt-4 text-xs text-slate-700">
-                <span className="flex items-center gap-1.5 font-semibold text-slate-900">
-                  <span className="h-2 w-2 rounded-full bg-primary-600" />
-                  {asignaturas.length} {asignaturas.length === 1 ? 'asignatura' : 'asignaturas'}
-                </span>
-                <span className="text-slate-200">•</span>
-                <span className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm text-accent-500">task_alt</span>
-                  {examenes.length} {examenes.length === 1 ? 'examen publicado' : 'examenes publicados'}
-                </span>
               </div>
             </Reveal>
 
@@ -264,66 +272,49 @@ export default function AsignaturasExamenesPage() {
               </div>
             ) : (
               <>
-                <section className="mb-6">
-                  <h2 className="mb-3 flex items-center gap-2 font-display text-base font-bold text-slate-900">
-                    <span className="material-symbols-outlined text-xl text-primary-600">auto_stories</span>
-                    Asignaturas evaluadas
-                  </h2>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Con una sola asignatura el selector no aporta nada: se va directo a sus examenes. */}
+                {asignaturas.length > 1 && (
+                  <nav aria-label="Asignaturas" className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-1">
                     {asignaturas.map((a) => {
                       const activa = a.cursoId === asignaturaActivaId
                       return (
                         <button
                           key={a.cursoId}
                           type="button"
+                          aria-pressed={activa}
                           onClick={() => setAsignaturaActivaId(a.cursoId)}
-                          className={`group relative overflow-hidden rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:shadow-md ${
-                            activa ? 'border-primary-600 shadow-md' : 'border-slate-200'
+                          className={`inline-flex shrink-0 items-center gap-2 rounded-full border py-2 pr-2.5 pl-3.5 text-sm font-semibold transition ${
+                            activa
+                              ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-primary-600 hover:text-primary-600'
                           }`}
                         >
+                          <span className="material-symbols-outlined text-lg" aria-hidden="true">
+                            {a.cursoId === ASIGNATURA_SIMULACRO_COMPLETO.cursoId
+                              ? ASIGNATURA_SIMULACRO_COMPLETO.icono
+                              : (ICONOS_POR_CURSO[a.cursoNombre] ?? ICONO_POR_DEFECTO)}
+                          </span>
+                          {a.cursoNombre}
                           <span
-                            className={`absolute top-0 left-0 h-full w-1.5 transition ${activa ? 'bg-primary-600' : 'bg-transparent'}`}
-                          />
-                          <div className="flex items-start justify-between gap-2 pl-1.5">
-                            <div
-                              className={`flex h-10 w-10 items-center justify-center rounded-lg transition ${
-                                activa ? 'bg-primary-50 text-primary-600' : 'bg-slate-50 text-slate-700'
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-2xl">
-                                {ICONOS_POR_CURSO[a.cursoNombre] ?? ICONO_POR_DEFECTO}
-                              </span>
-                            </div>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                                activa ? 'bg-primary-600/10 text-primary-600' : 'bg-slate-50 text-slate-700'
-                              }`}
-                            >
-                              {a.examenes.length} {a.examenes.length === 1 ? 'examen' : 'examenes'}
-                            </span>
-                          </div>
-                          <h3 className="mt-3 pl-1.5 font-display text-sm font-bold text-slate-900">{a.cursoNombre}</h3>
+                            className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[11px] font-bold ${
+                              activa ? 'bg-white/20 text-white' : 'bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            {a.examenes.length}
+                          </span>
                         </button>
                       )
                     })}
-                  </div>
-                </section>
+                  </nav>
+                )}
 
                 {asignaturaActiva && (
-                  <section>
-                    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full bg-primary-600" />
-                          <span className="text-xs font-bold tracking-wider text-primary-600 uppercase">Asignatura activa</span>
-                        </div>
-                        <h2 className="font-display text-lg font-bold text-slate-900">
-                          Examenes de {asignaturaActiva.cursoNombre} ({universidad.siglas})
-                        </h2>
-                      </div>
-                    </div>
+                  <section aria-labelledby="titulo-examenes">
+                    <h2 id="titulo-examenes" className="mb-4 font-display text-lg font-bold text-slate-900">
+                      {asignaturas.length > 1 ? `Examenes de ${asignaturaActiva.cursoNombre}` : 'Examenes disponibles'}
+                    </h2>
 
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="flex flex-col gap-4">
                       {asignaturaActiva.examenes.map((examen) => {
                         const penalizacion = penalizacionDe(examen.reglasCalificacion)
                         const sinPreguntas = !examen.disponible
@@ -333,85 +324,86 @@ export default function AsignaturasExamenesPage() {
                           <article
                             key={examen.id}
                             aria-label={examen.nombre}
-                            className={`relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition ${
-                              bloqueado ? 'opacity-75' : 'hover:shadow-lg'
+                            className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-white py-5 pr-5 pl-6 shadow-sm transition sm:py-6 sm:pr-6 sm:pl-7 ${
+                              bloqueado ? 'opacity-75' : 'hover:border-primary-600/40 hover:shadow-md'
                             }`}
                           >
-                            <div className={`absolute top-0 right-0 left-0 h-1.5 ${bloqueado ? 'bg-slate-200' : 'bg-primary-600'}`} />
-                            <div>
-                              <div className="mb-2 flex items-center justify-between gap-2">
-                                {sinPreguntas ? (
-                                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                            <span className={`absolute inset-y-0 left-0 w-1.5 ${bloqueado ? 'bg-slate-200' : 'bg-primary-600'}`} />
+
+                            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="min-w-0">
+                                {sinPreguntas && (
+                                  <span className="mb-2 inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
                                     Sin preguntas disponibles aún
                                   </span>
-                                ) : (
-                                  <span className="rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-bold text-primary-600">
+                                )}
+                                <h3 className="font-display text-base leading-snug font-bold text-slate-900 sm:text-lg">{examen.nombre}</h3>
+
+                                <ul className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-700">
+                                  <li className="flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-lg text-primary-600" aria-hidden="true">schedule</span>
+                                    {formatearDuracion(examen.duracionSeg)}
+                                  </li>
+                                  <li className="flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-lg text-amber-400" aria-hidden="true">grade</span>
+                                    {examen.puntajeTotal} pts
+                                  </li>
+                                  <li className="flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-lg text-slate-500" aria-hidden="true">
+                                      {examen.navegacion === 'LIBRE' ? 'swap_horiz' : 'arrow_forward'}
+                                    </span>
                                     {examen.navegacion === 'LIBRE' ? 'Navegacion libre' : 'Navegacion secuencial'}
-                                  </span>
-                                )}
-                                <span className="text-xs font-medium text-slate-500">{formatearDuracion(examen.duracionSeg)}</span>
+                                  </li>
+                                  {examen.permitePausa && (
+                                    <li className="flex items-center gap-1.5">
+                                      <span className="material-symbols-outlined text-lg text-slate-500" aria-hidden="true">pause_circle</span>
+                                      Puedes pausar
+                                    </li>
+                                  )}
+                                  {penalizacion !== null && (
+                                    <li className="flex items-center gap-1.5 font-semibold text-rose-600">
+                                      <span className="material-symbols-outlined text-lg" aria-hidden="true">trending_down</span>
+                                      <span className="sr-only">Penalizacion por error:</span>
+                                      <span>Resta {formatearFraccion(penalizacion)} de la pregunta</span>
+                                    </li>
+                                  )}
+                                </ul>
                               </div>
-                              <h3 className="font-display text-base leading-snug font-bold text-slate-900">{examen.nombre}</h3>
 
-                              <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-lg text-primary-600">schedule</span>
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] font-semibold text-slate-500">Duracion</span>
-                                    <span className="text-xs font-bold text-slate-900">{formatearDuracion(examen.duracionSeg)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-lg text-amber-400">grade</span>
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] font-semibold text-slate-500">Puntaje max.</span>
-                                    <span className="text-xs font-bold text-slate-900">{examen.puntajeTotal} pts</span>
-                                  </div>
-                                </div>
-                                {penalizacion !== null && (
-                                  <div className="col-span-2 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-lg text-rose-500">trending_down</span>
-                                    <div className="flex flex-col">
-                                      <span className="text-[10px] font-semibold text-slate-500">Penalizacion por error</span>
-                                      <span className="text-xs font-bold text-rose-600">Resta {formatearFraccion(penalizacion)} de la pregunta</span>
-                                    </div>
-                                  </div>
+                              <div className="shrink-0 sm:w-48">
+                                {bloqueado ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 px-5 py-3 text-sm font-bold text-slate-700"
+                                  >
+                                    <span className="material-symbols-outlined text-base" aria-hidden="true">
+                                      lock
+                                    </span>
+                                    {bloqueadoPorPrograma ? 'Incluido en Premium' : bloqueadoPorPlan ? 'Bloqueado por tu plan' : 'No disponible'}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    disabled={iniciandoId === examen.id}
+                                    onClick={() => handleIniciar(examen)}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-accent-600 disabled:opacity-60"
+                                  >
+                                    {iniciandoId === examen.id ? 'Iniciando...' : 'Iniciar prueba'}
+                                    {iniciandoId !== examen.id && <span className="material-symbols-outlined text-base">arrow_forward</span>}
+                                  </button>
                                 )}
                               </div>
                             </div>
 
-                            <div className="mt-5 flex flex-col gap-2">
-                              {bloqueado ? (
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-700"
-                                >
-                                  <span className="material-symbols-outlined text-base" aria-hidden="true">
-                                    lock
-                                  </span>
-                                  {bloqueadoPorPrograma ? 'Incluido en Premium' : bloqueadoPorPlan ? 'Bloqueado por tu plan' : 'No disponible'}
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  disabled={iniciandoId === examen.id}
-                                  onClick={() => handleIniciar(examen)}
-                                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-accent-600 disabled:opacity-60"
-                                >
-                                  {iniciandoId === examen.id ? 'Iniciando...' : 'Iniciar prueba'}
-                                  {iniciandoId !== examen.id && <span className="material-symbols-outlined text-base">arrow_forward</span>}
-                                </button>
-                              )}
-                              {sinPreguntas && !bloqueadoPorPlan && !bloqueadoPorPrograma && (
-                                <p className="text-xs text-slate-700">Tu docente aún no carga suficientes preguntas para este examen. Prueba con otro.</p>
-                              )}
-                              {errorTarjeta && (
-                                <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
-                                  {errorTarjeta}
-                                </p>
-                              )}
-                            </div>
+                            {sinPreguntas && !bloqueadoPorPlan && !bloqueadoPorPrograma && (
+                              <p className="mt-3 text-xs text-slate-700">Tu docente aún no carga suficientes preguntas para este examen. Prueba con otro.</p>
+                            )}
+                            {errorTarjeta && (
+                              <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
+                                {errorTarjeta}
+                              </p>
+                            )}
                           </article>
                         )
                       })}

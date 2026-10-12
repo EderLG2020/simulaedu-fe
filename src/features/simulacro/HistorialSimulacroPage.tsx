@@ -136,25 +136,16 @@ export default function HistorialSimulacroPage() {
       <StudentHeader />
 
       <main className="mx-auto flex max-w-[1100px] flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <nav aria-label="Ruta de navegación" className="mb-2 flex items-center gap-2 text-xs text-slate-500">
-              <Link to="/" className="font-medium transition hover:text-primary-600">
-                Inicio
-              </Link>
-              <span className="material-symbols-outlined text-sm text-slate-200">chevron_right</span>
-              <span className="font-semibold text-slate-900">Historial</span>
-            </nav>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Historial de simulacros</h1>
-            <p className="text-sm text-slate-500">Revisa cómo te fue en tus simulacros anteriores.</p>
-          </div>
-          <Link
-            to="/examenes"
-            className="flex h-10 items-center gap-1.5 self-start rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-primary-50 hover:text-primary-600 sm:self-auto"
-          >
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
-            Volver a exámenes
-          </Link>
+        <div>
+          <nav aria-label="Ruta de navegación" className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+            <Link to="/" className="font-medium transition hover:text-primary-600">
+              Inicio
+            </Link>
+            <span className="material-symbols-outlined text-sm text-slate-200">chevron_right</span>
+            <span className="font-semibold text-slate-900">Historial</span>
+          </nav>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Historial de simulacros</h1>
+          <p className="text-sm text-slate-500">Revisa cómo te fue en tus simulacros anteriores.</p>
         </div>
 
         {error && (

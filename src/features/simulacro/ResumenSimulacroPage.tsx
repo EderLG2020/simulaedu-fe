@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import type { ExamenResumen } from '../../api/examenesApi'
 import type { ResumenSimulacro } from '../../api/simulacrosApi'
+import StudentHeader from '../home/StudentHeader'
 import { formatearDuracionLarga, formatearPuntos } from './formatoSimulacro'
 
 /** Migracion del mockup de Stitch "resultado del simulacro". Se omitieron los datos que el mockup inventaba
@@ -55,15 +56,18 @@ export default function ResumenSimulacroPage() {
 
   if (!resumen) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 font-body text-slate-900">
-        <div className="flex max-w-md flex-col items-center gap-5 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600">
-            <span className="material-symbols-outlined text-3xl">query_stats</span>
+      <div className="flex min-h-screen flex-col bg-slate-50 font-body text-slate-900">
+        <StudentHeader />
+        <div className="flex flex-1 items-center justify-center p-6">
+          <div className="flex max-w-md flex-col items-center gap-5 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+              <span className="material-symbols-outlined text-3xl">query_stats</span>
+            </div>
+            <p className="text-sm text-slate-700">
+              No hay un resumen disponible para mostrar aquí. Puedes consultar tus resultados anteriores en tu historial.
+            </p>
+            <Acciones />
           </div>
-          <p className="text-sm text-slate-700">
-            No hay un resumen disponible para mostrar aquí. Puedes consultar tus resultados anteriores en tu historial.
-          </p>
-          <Acciones />
         </div>
       </div>
     )
@@ -81,14 +85,7 @@ export default function ResumenSimulacroPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-body text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-4 py-2.5 sm:px-6">
-          <Link to="/examenes" className="flex items-center gap-1 text-sm font-semibold text-slate-700 transition hover:text-primary-600">
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
-            Exámenes
-          </Link>
-        </div>
-      </header>
+      <StudentHeader />
 
       <main className="mx-auto flex max-w-[1100px] flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-6">
         <div className="flex flex-col gap-2">

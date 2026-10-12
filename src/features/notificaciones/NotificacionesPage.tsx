@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useOutletContext } from 'react-router-dom'
+import { useLocation, useOutletContext } from 'react-router-dom'
 import type { PageMeta } from '../../api/client'
-import { listarNotificaciones, marcarLeida, type Notificacion } from '../../api/notificacionesApi'
+import { contarNoLeidas, listarNotificaciones, marcarLeida, type Notificacion } from '../../api/notificacionesApi'
+import StudentHeader from '../home/StudentHeader'
 import type { ContextoPanel } from '../panel/PanelLayout'
-import { Alert, Badge, Button, buttonClasses, Card, cn, EmptyState, Icon, PageHeader } from '../../components/ui'
+import { Alert, Badge, Button, Card, cn, EmptyState, Icon, PageHeader } from '../../components/ui'
 
 const LIMITE_POR_PAGINA = 20
 
@@ -13,7 +14,7 @@ function formatearFecha(fecha: string | null): string {
 
 export default function NotificacionesPage() {
   // En /admin, /docente y /coordinador se monta dentro del PanelLayout de cada rol: sin relleno propio
-  // ni "Volver al inicio", y avisa al layout para que actualice el contador de no leidas del sidebar.
+  // ni el StudentHeader del alumno, y avisa al layout para que actualice el contador de no leidas del sidebar.
   const enPanel = /^\/(admin|docente|coordinador)(\/|$)/.test(useLocation().pathname)
   const contextoPanel = useOutletContext<ContextoPanel | undefined>()
   const [notificaciones, setNotificaciones] = useState<Notificacion[] | null>(null)
@@ -21,6 +22,13 @@ export default function NotificacionesPage() {
   const [pagina, setPagina] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [marcandoId, setMarcandoId] = useState<string | null>(null)
+  // Fuera de los paneles se muestra el StudentHeader: se le pasa el conteo para que baje al marcar como leida.
+  const [noLeidasAlumno, setNoLeidasAlumno] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    if (enPanel) return
+    contarNoLeidas().then(setNoLeidasAlumno).catch(() => {})
+  }, [enPanel])
 
   function cargar() {
     listarNotificaciones(pagina, LIMITE_POR_PAGINA)
@@ -39,6 +47,7 @@ export default function NotificacionesPage() {
     try {
       await marcarLeida(notificacion.id)
       contextoPanel?.refrescarNoLeidas()
+      setNoLeidasAlumno((n) => (n === undefined ? n : Math.max(0, n - 1)))
       setNotificaciones((actual) =>
         actual === null ? actual : actual.map((n) => (n.id === notificacion.id ? { ...n, leida: true } : n)),
       )
@@ -54,19 +63,10 @@ export default function NotificacionesPage() {
   const mostrarListado = notificaciones !== null || !error
 
   return (
-    <div className={enPanel ? undefined : 'min-h-screen bg-slate-50 p-6 font-body text-slate-900 antialiased lg:p-8'}>
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <PageHeader
-          title="Notificaciones"
-          actions={
-            !enPanel && (
-              <Link to="/" className={buttonClasses('secondary')}>
-                <Icon name="arrow_back" />
-                Volver al inicio
-              </Link>
-            )
-          }
-        />
+    <div className={enPanel ? undefined : 'min-h-screen bg-slate-50 font-body text-slate-900 antialiased'}>
+      {!enPanel && <StudentHeader noLeidas={noLeidasAlumno} />}
+      <div className={cn('mx-auto flex flex-col gap-6', enPanel ? 'max-w-7xl' : 'max-w-[1100px] px-6 py-8')}>
+        <PageHeader title="Notificaciones" />
 
         {error && <Alert>{error}</Alert>}
 
