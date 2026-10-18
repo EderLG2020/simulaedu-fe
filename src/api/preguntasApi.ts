@@ -19,6 +19,23 @@ export interface AlternativaRequest {
   orden: number
 }
 
+export type Acento = 'en-US' | 'en-GB'
+export type Velocidad = 'lenta' | 'normal'
+export type Hablante = 'A' | 'B'
+
+export interface LineaDialogo {
+  hablante: Hablante
+  texto: string
+}
+
+/** Listening: guion de un dialogo; al guardar la pregunta lleva tambien el audio generado. */
+export interface GuionAudio {
+  acento: Acento
+  velocidad: Velocidad
+  lineas: LineaDialogo[]
+  audioUrl?: string | null
+}
+
 export interface Pregunta {
   id: string
   temaId: string
@@ -33,6 +50,9 @@ export interface Pregunta {
   alternativas: Alternativa[]
   universidadesObjetivoIds: string[]
   preguntaAnteriorId: string | null
+  guionAudio: GuionAudio | null
+  /** Explicacion de la respuesta correcta; el alumno la ve al revisar el simulacro (Premium, RN-09). */
+  explicacionHtml: string | null
 }
 
 export interface PreguntaRequest {
@@ -44,6 +64,8 @@ export interface PreguntaRequest {
   metadataTipo?: Record<string, unknown>
   alternativas?: AlternativaRequest[]
   universidadesObjetivoIds?: string[]
+  guionAudio?: GuionAudio | null
+  explicacionHtml?: string | null
 }
 
 export interface ListarPreguntasParams {
@@ -92,6 +114,15 @@ export function publicarPregunta(id: string): Promise<Pregunta> {
 
 export function eliminarPregunta(id: string): Promise<void> {
   return apiFetch<void>(`/preguntas/${id}`, { method: 'DELETE' })
+}
+
+/** Listening: genera con voz sintetica (Azure, en el backend) el audio del dialogo y devuelve su URL. */
+export async function generarAudioDialogo(guion: GuionAudio): Promise<string> {
+  const { audioUrl } = await apiFetch<{ audioUrl: string }>('/preguntas/audio-dialogo', {
+    method: 'POST',
+    body: JSON.stringify({ acento: guion.acento, velocidad: guion.velocidad, lineas: guion.lineas }),
+  })
+  return audioUrl
 }
 
 interface UrlSubidaImagen {

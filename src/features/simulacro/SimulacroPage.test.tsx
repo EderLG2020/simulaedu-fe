@@ -20,6 +20,7 @@ function pregunta(n: number, parcial: Partial<PreguntaSimulacro> = {}): Pregunta
     ],
     respuestaDada: {},
     marcadaParaRevision: false,
+    escuchasRestantes: null,
     ...parcial,
   }
 }
@@ -45,6 +46,7 @@ const api = vi.hoisted(() => ({
   finalizar: vi.fn(),
   marcar: vi.fn(),
   pausar: vi.fn(),
+  escuchar: vi.fn(),
 }))
 
 vi.mock('../../api/simulacrosApi', () => ({
@@ -54,6 +56,7 @@ vi.mock('../../api/simulacrosApi', () => ({
   finalizarSimulacro: (...a: unknown[]) => api.finalizar(...a),
   marcarParaRevision: (...a: unknown[]) => api.marcar(...a),
   pausarSimulacro: (...a: unknown[]) => api.pausar(...a),
+  registrarEscucha: (...a: unknown[]) => api.escuchar(...a),
 }))
 vi.mock('../../api/examenesApi', () => ({
   obtenerExamen: () =>
@@ -165,5 +168,34 @@ describe('SimulacroPage', () => {
     expect(await screen.findByText('Simulacro en pausa')).toBeInTheDocument()
     expect(screen.queryByText('Enunciado de la pregunta 1')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /Reanudar/ }).length).toBeGreaterThan(0)
+  })
+
+  it('en un simulacro completo el audio usa el reproductor limitado y descuenta la escucha', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+    vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(function (this: HTMLMediaElement) {
+      this.dispatchEvent(new Event('canplaythrough'))
+    })
+    api.escuchar.mockResolvedValue({ escuchasRestantes: 1 })
+    const conAudio = (escuchasRestantes: number | null) =>
+      pregunta(1, { enunciadoHtml: '<p>Listen.</p><p><audio controls src="https://x/1.mp3"></audio></p>', escuchasRestantes })
+
+    const { container } = renderPagina(simulacro({ preguntas: [conAudio(2)] }))
+    const boton = await screen.findByRole('button', { name: /quedan 2 veces/ })
+    expect(container.querySelector('audio[controls]')).toBeNull()
+
+    fireEvent.click(boton)
+    expect(await screen.findByRole('button', { name: /Reproduciendo/ })).toBeInTheDocument()
+    expect(api.escuchar).toHaveBeenCalledWith('sim-1', 'r-1')
+    vi.restoreAllMocks()
+  })
+
+  it('en una práctica por tema deja el reproductor nativo sin límite', async () => {
+    const { container } = renderPagina(
+      simulacro({ preguntas: [pregunta(1, { enunciadoHtml: '<p><audio controls src="https://x/1.mp3"></audio></p>', escuchasRestantes: null })] }),
+    )
+    await screen.findByText('Pregunta 1 de 1')
+    expect(container.querySelector('audio[controls]')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /Escuchar/ })).toBeNull()
   })
 })

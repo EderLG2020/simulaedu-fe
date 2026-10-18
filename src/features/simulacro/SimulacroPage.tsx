@@ -34,6 +34,7 @@ export default function SimulacroPage() {
     guardarRespuesta,
     guardarRespuestaConDebounce,
     alternarMarcaRevision,
+    registrarEscuchaDe,
     irAPregunta,
     cambiarPausa,
   } = useSimulacro()
@@ -152,6 +153,7 @@ export default function SimulacroPage() {
                 valorPregunta={valorPregunta}
                 esUltima={esUltima}
                 onAlternarMarca={() => alternarMarcaRevision(preguntaActual)}
+                onEscuchar={() => registrarEscuchaDe(preguntaActual)}
                 onGuardar={(respuestaDada) => guardarRespuesta(preguntaActual.respuestaSimulacroId, respuestaDada)}
                 onGuardarConDebounce={(respuestaDada) => guardarRespuestaConDebounce(preguntaActual.respuestaSimulacroId, respuestaDada)}
                 onIr={irAPregunta}

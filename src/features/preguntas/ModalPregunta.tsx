@@ -1,6 +1,6 @@
 import type { CursoConTemas } from '../../api/cursosApi'
 import type { UniversidadResumen } from '../../api/universidadesApi'
-import { Alert, Badge, Button, Field, FieldGroup, Icon, Input, Modal, SegmentedControl, Select } from '../../components/ui'
+import { Alert, Badge, Button, Field, FieldGroup, Icon, Input, Modal, SegmentedControl, Select, Textarea } from '../../components/ui'
 import CamposPorTipo from './CamposPorTipo'
 import EditorEnunciado from './EditorEnunciado'
 import { OPCIONES_DIFICULTAD, OPCIONES_TIPO } from './etiquetasPregunta'
@@ -58,6 +58,18 @@ export default function ModalPregunta({ form, cursos, universidades, universidad
       </FieldGroup>
 
       <CamposPorTipo form={form} />
+
+      <Field
+        label="Explicación de la respuesta"
+        hint="Opcional. Explica por qué la respuesta correcta lo es; el alumno la ve al revisar su simulacro (planes Premium e Institución). Admite HTML."
+      >
+        <Textarea
+          rows={3}
+          value={formulario.explicacionHtml}
+          onChange={(e) => setFormulario({ ...formulario, explicacionHtml: e.target.value })}
+          placeholder="Ej.: Se divide 27 entre 3, así que x = 9."
+        />
+      </Field>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label="Tiempo sugerido (segundos)">

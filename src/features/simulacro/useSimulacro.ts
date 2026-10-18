@@ -9,6 +9,7 @@ import {
   obtenerTiempoRestante,
   pausarSimulacro,
   reanudarSimulacro,
+  registrarEscucha,
   type PreguntaSimulacro,
   type SimulacroActual,
 } from '../../api/simulacrosApi'
@@ -202,6 +203,33 @@ export function useSimulacro() {
     })
   }
 
+  /**
+   * Listening: pide al servidor una escucha del audio antes de reproducirlo (en simulacro completo
+   * hay 2 por pregunta y el contador vive en el servidor). Devuelve si se puede reproducir.
+   */
+  async function registrarEscuchaDe(pregunta: PreguntaSimulacro): Promise<boolean> {
+    if (!id) return false
+    const actualizar = (escuchasRestantes: number | null) =>
+      setSimulacro((actual) =>
+        actual && {
+          ...actual,
+          preguntas: actual.preguntas.map((p) => (p.respuestaSimulacroId === pregunta.respuestaSimulacroId ? { ...p, escuchasRestantes } : p)),
+        },
+      )
+    try {
+      const { escuchasRestantes } = await registrarEscucha(id, pregunta.respuestaSimulacroId)
+      actualizar(escuchasRestantes)
+      return true
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'ESCUCHAS_AGOTADAS') {
+        actualizar(0)
+      } else {
+        setError('No se pudo reproducir el audio. Revisa tu conexión e inténtalo de nuevo.')
+      }
+      return false
+    }
+  }
+
   function irAPregunta(indice: number) {
     if (!simulacro || indice < 0 || indice >= simulacro.preguntas.length) return
     if (simulacro.navegacion === 'SECUENCIAL' && indice > indiceMaximoVisitado + 1) return
@@ -258,6 +286,7 @@ export function useSimulacro() {
     guardarRespuesta,
     guardarRespuestaConDebounce,
     alternarMarcaRevision,
+    registrarEscuchaDe,
     irAPregunta,
     cambiarPausa,
   }
