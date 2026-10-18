@@ -26,6 +26,8 @@ export interface PreguntaSimulacro {
   alternativas: AlternativaSimulacro[]
   respuestaDada: Record<string, unknown>
   marcadaParaRevision: boolean
+  /** Listening: escuchas del audio que quedan (simulacro completo, maximo 2). null = sin limite. */
+  escuchasRestantes: number | null
 }
 
 export interface SimulacroActual {
@@ -95,6 +97,11 @@ export function marcarParaRevision(
     method: 'PATCH',
     body: JSON.stringify({ marcada }),
   })
+}
+
+/** Listening: registra una reproduccion del audio de la pregunta antes de reproducirlo. */
+export function registrarEscucha(simulacroId: string, respuestaId: string): Promise<{ escuchasRestantes: number | null }> {
+  return apiFetch(`/simulacros/${simulacroId}/respuestas/${respuestaId}/escuchas`, { method: 'POST' })
 }
 
 export function pausarSimulacro(simulacroId: string): Promise<SimulacroActual> {

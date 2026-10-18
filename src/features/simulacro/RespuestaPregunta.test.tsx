@@ -16,6 +16,7 @@ function pregunta(parcial: Partial<PreguntaSimulacro>): PreguntaSimulacro {
     alternativas: [],
     respuestaDada: {},
     marcadaParaRevision: false,
+    escuchasRestantes: null,
     ...parcial,
   }
 }

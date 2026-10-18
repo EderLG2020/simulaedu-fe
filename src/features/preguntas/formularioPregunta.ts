@@ -1,4 +1,4 @@
-import type { AlternativaRequest, Dificultad, Pregunta, PreguntaRequest, TipoPregunta } from '../../api/preguntasApi'
+import type { AlternativaRequest, Dificultad, GuionAudio, Pregunta, PreguntaRequest, TipoPregunta } from '../../api/preguntasApi'
 
 /** Modelo del formulario de pregunta y su conversion desde la pregunta guardada y hacia el request del backend. */
 
@@ -28,6 +28,8 @@ export interface FormularioPregunta {
   rubricaEvaluacion: string
   formatoRespuesta: string
   valorCorrecto: string
+  /** Listening: guion del dialogo cuyo audio se inserto en el enunciado (null si no hay). */
+  guionAudio: GuionAudio | null
 }
 
 export const FORMULARIO_VACIO: FormularioPregunta = {
@@ -48,6 +50,7 @@ export const FORMULARIO_VACIO: FormularioPregunta = {
   rubricaEvaluacion: '',
   formatoRespuesta: 'entero',
   valorCorrecto: '',
+  guionAudio: null,
 }
 
 export function preguntaAFormulario(pregunta: Pregunta): FormularioPregunta {
@@ -73,6 +76,7 @@ export function preguntaAFormulario(pregunta: Pregunta): FormularioPregunta {
     rubricaEvaluacion: (meta.rubricaEvaluacion as string | undefined) ?? '',
     formatoRespuesta: (meta.formatoRespuesta as string | undefined) ?? 'entero',
     valorCorrecto: meta.valorCorrecto !== undefined ? String(meta.valorCorrecto) : '',
+    guionAudio: pregunta.guionAudio ?? null,
   }
 }
 
@@ -84,6 +88,7 @@ export function formularioARequest(formulario: FormularioPregunta): PreguntaRequ
     enunciadoHtml: formulario.enunciadoHtml,
     tiempoSugeridoSeg: formulario.tiempoSugeridoSeg.trim() === '' ? null : Number(formulario.tiempoSugeridoSeg),
     universidadesObjetivoIds: formulario.universidadesObjetivoIds,
+    guionAudio: guionVigente(formulario),
   }
 
   if (formulario.tipoPregunta === 'OPCION_UNICA' || formulario.tipoPregunta === 'OPCION_MULTIPLE') {
@@ -125,6 +130,24 @@ export function formularioARequest(formulario: FormularioPregunta): PreguntaRequ
       valorCorrecto: Number(formulario.valorCorrecto || 0),
     },
   }
+}
+
+/** El guion solo se guarda si su audio sigue en el enunciado (el docente pudo borrar el reproductor a mano). */
+function guionVigente(formulario: FormularioPregunta): GuionAudio | null {
+  const url = formulario.guionAudio?.audioUrl
+  return url && formulario.enunciadoHtml.includes(url) ? formulario.guionAudio : null
+}
+
+const reproductor = (url: string) => `<p><audio controls preload="none" src="${url}"></audio></p>`
+
+/**
+ * Listening: pone el audio del dialogo en el enunciado. Si ya habia un dialogo generado
+ * ([urlAnterior]), reemplaza ese reproductor en vez de agregar otro.
+ */
+export function insertarAudioDialogo(enunciado: string, urlAnterior: string | null | undefined, urlNueva: string): string {
+  if (urlAnterior && enunciado.includes(urlAnterior)) return enunciado.split(urlAnterior).join(urlNueva)
+  return enunciado.trim() === '' ? reproductor(urlNueva) : `${enunciado}
+${reproductor(urlNueva)}`
 }
 
 export function envolverSeleccion(valor: string, inicio: number, fin: number, tagAbre: string, tagCierra: string): { texto: string; cursor: number } {

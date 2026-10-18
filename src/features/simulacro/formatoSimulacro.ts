@@ -41,3 +41,21 @@ export function tieneRespuesta(respuestaDada: Record<string, unknown>): boolean 
 export function alternativasOrdenadas(pregunta: PreguntaSimulacro): AlternativaSimulacro[] {
   return [...pregunta.alternativas].sort((a, b) => a.orden - b.orden)
 }
+
+/**
+ * Listening en simulacro completo: saca los `<audio>` del enunciado (ya sanitizado) para mostrarlos
+ * con el reproductor limitado en vez del nativo. Devuelve el HTML sin ellos y sus URLs; un `<p>` que
+ * quede vacio tambien se quita.
+ */
+export function separarAudios(html: string): { html: string; audios: string[] } {
+  const documento = new DOMParser().parseFromString(html, 'text/html')
+  const audios: string[] = []
+  documento.body.querySelectorAll('audio').forEach((audio) => {
+    const src = audio.getAttribute('src') ?? audio.querySelector('source')?.getAttribute('src')
+    if (src && !audios.includes(src)) audios.push(src)
+    const padre = audio.parentElement
+    audio.remove()
+    if (padre && padre !== documento.body && padre.tagName === 'P' && padre.textContent?.trim() === '' && padre.children.length === 0) padre.remove()
+  })
+  return { html: documento.body.innerHTML.trim(), audios }
+}

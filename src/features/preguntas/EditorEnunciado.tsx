@@ -1,9 +1,10 @@
 import { Button, buttonClasses, Icon } from '../../components/ui'
 import { htmlSeguro } from '../../lib/html'
 import { CLASE_HTML_ENRIQUECIDO } from '../simulacro/estilosSimulacro'
+import PanelDialogo from './PanelDialogo'
 import type { EstadoFormularioPregunta } from './useFormularioPregunta'
 
-/** Editor del enunciado: barra de formato (tags HTML, imagen, audio, codigo, LaTeX), textarea y vista previa. */
+/** Editor del enunciado: barra de formato (tags HTML, imagen, audio, dialogo, codigo, LaTeX), textarea y vista previa. */
 export default function EditorEnunciado({ form }: { form: EstadoFormularioPregunta }) {
   const {
     formulario,
@@ -16,6 +17,9 @@ export default function EditorEnunciado({ form }: { form: EstadoFormularioPregun
     insertarCodigo,
     handleInsertarImagenEnunciado,
     handleInsertarAudioEnunciado,
+    dialogoAbierto,
+    setDialogoAbierto,
+    insertarDialogo,
   } = form
 
   return (
@@ -41,6 +45,15 @@ export default function EditorEnunciado({ form }: { form: EstadoFormularioPregun
           <span className="sr-only">Insertar audio</span>
           <input type="file" accept="audio/*" className="sr-only" disabled={subiendoAudio} onChange={handleInsertarAudioEnunciado} />
         </label>
+        <Button
+          variant="ghost"
+          size="icon"
+          icon="record_voice_over"
+          title={formulario.guionAudio ? 'Editar el diálogo (listening)' : 'Crear diálogo (listening): genera el audio con voces'}
+          aria-label={formulario.guionAudio ? 'Editar diálogo' : 'Crear diálogo'}
+          aria-pressed={dialogoAbierto}
+          onClick={() => setDialogoAbierto((abierto) => !abierto)}
+        />
         <Button variant="ghost" size="icon" icon="code" title="Bloque de código: envuelve la selección (SQL, Java...)" aria-label="Bloque de código" onClick={insertarCodigo} />
         <Button variant="ghost" size="sm" icon="function" title="Envuelve la selección en $...$ (LaTeX)" onClick={() => aplicarFormato('$', '$')}>
           LaTeX
@@ -65,6 +78,7 @@ export default function EditorEnunciado({ form }: { form: EstadoFormularioPregun
         onChange={(e) => setFormulario({ ...formulario, enunciadoHtml: e.target.value })}
         placeholder="Escribe el enunciado del problema..."
       />
+      {dialogoAbierto && <PanelDialogo guionInicial={formulario.guionAudio} onInsertar={insertarDialogo} onCerrar={() => setDialogoAbierto(false)} />}
       {vistaPrevia && (
         <div className="border-t border-slate-200 bg-slate-50/60 p-3">
           <span className="mb-2 block text-xs font-semibold text-slate-500">Así lo verá el estudiante</span>
