@@ -18,6 +18,7 @@ const COLUMNAS: { nombre: string; detalle: string }[] = [
   { nombre: 'img_enunciado, img_a … img_e', detalle: 'Opcional: nombre del archivo de imagen dentro del ZIP.' },
   { nombre: 'audio_enunciado', detalle: 'Opcional: audio para listening (mp3, wav, ogg o m4a) dentro del ZIP.' },
   { nombre: 'codigo_enunciado', detalle: 'Opcional: código que se muestra como bloque (SQL, Java...), respetando saltos de línea.' },
+  { nombre: 'explicacion', detalle: 'Opcional: por qué la respuesta es correcta. El alumno la ve al revisar el simulacro (Premium).' },
   { nombre: 'tipo, tiempo_seg, universidades', detalle: 'Opcionales: opcion_unica/opcion_multiple, segundos, siglas (UNMSM|UNI).' },
 ]
 

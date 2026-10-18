@@ -30,6 +30,8 @@ export interface FormularioPregunta {
   valorCorrecto: string
   /** Listening: guion del dialogo cuyo audio se inserto en el enunciado (null si no hay). */
   guionAudio: GuionAudio | null
+  /** Explicacion de la respuesta correcta (HTML), opcional. */
+  explicacionHtml: string
 }
 
 export const FORMULARIO_VACIO: FormularioPregunta = {
@@ -51,6 +53,7 @@ export const FORMULARIO_VACIO: FormularioPregunta = {
   formatoRespuesta: 'entero',
   valorCorrecto: '',
   guionAudio: null,
+  explicacionHtml: '',
 }
 
 export function preguntaAFormulario(pregunta: Pregunta): FormularioPregunta {
@@ -77,6 +80,7 @@ export function preguntaAFormulario(pregunta: Pregunta): FormularioPregunta {
     formatoRespuesta: (meta.formatoRespuesta as string | undefined) ?? 'entero',
     valorCorrecto: meta.valorCorrecto !== undefined ? String(meta.valorCorrecto) : '',
     guionAudio: pregunta.guionAudio ?? null,
+    explicacionHtml: pregunta.explicacionHtml ?? '',
   }
 }
 
@@ -89,6 +93,7 @@ export function formularioARequest(formulario: FormularioPregunta): PreguntaRequ
     tiempoSugeridoSeg: formulario.tiempoSugeridoSeg.trim() === '' ? null : Number(formulario.tiempoSugeridoSeg),
     universidadesObjetivoIds: formulario.universidadesObjetivoIds,
     guionAudio: guionVigente(formulario),
+    explicacionHtml: formulario.explicacionHtml.trim() === '' ? null : formulario.explicacionHtml,
   }
 
   if (formulario.tipoPregunta === 'OPCION_UNICA' || formulario.tipoPregunta === 'OPCION_MULTIPLE') {

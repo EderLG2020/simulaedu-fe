@@ -18,6 +18,7 @@ export const claves = {
     estadisticas: (examenId: string) => ['examenes', 'estadisticas', examenId] as const,
   },
   historialTodo: ['historial'] as const,
+  revisionSimulacro: (simulacroId: string) => ['simulacros', simulacroId, 'revision'] as const,
   historial: (pagina: number, limite: number) => ['historial', pagina, limite] as const,
   ranking: (ambito: string, periodo: string, referenciaId: string | null) => ['ranking', ambito, periodo, referenciaId] as const,
   preguntasTodo: ['preguntas'] as const,

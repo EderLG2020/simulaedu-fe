@@ -51,6 +51,8 @@ export interface Pregunta {
   universidadesObjetivoIds: string[]
   preguntaAnteriorId: string | null
   guionAudio: GuionAudio | null
+  /** Explicacion de la respuesta correcta; el alumno la ve al revisar el simulacro (Premium, RN-09). */
+  explicacionHtml: string | null
 }
 
 export interface PreguntaRequest {
@@ -63,6 +65,7 @@ export interface PreguntaRequest {
   alternativas?: AlternativaRequest[]
   universidadesObjetivoIds?: string[]
   guionAudio?: GuionAudio | null
+  explicacionHtml?: string | null
 }
 
 export interface ListarPreguntasParams {
