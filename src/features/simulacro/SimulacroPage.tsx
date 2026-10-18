@@ -1,387 +1,190 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ApiError } from '../../api/client'
-import {
-  autoguardarRespuesta,
-  finalizarSimulacro,
-  marcarParaRevision,
-  obtenerTiempoRestante,
-  pausarSimulacro,
-  reanudarSimulacro,
-  type PreguntaSimulacro,
-  type SimulacroActual,
-} from '../../api/simulacrosApi'
-import './simulacro.css'
+import { useNavigate } from 'react-router-dom'
+import { Icon } from '../../components/ui'
+import CabeceraSimulacro from './CabeceraSimulacro'
+import ConfirmarFinalizarModal from './ConfirmarFinalizarModal'
+import NavegadorPreguntas from './NavegadorPreguntas'
+import PanelPregunta from './PanelPregunta'
+import { useSimulacro } from './useSimulacro'
 
-const INTERVALO_SINCRONIZACION_MS = 10_000
-const DEBOUNCE_NUMERICA_MS = 500
-
-function formatearTiempo(segundos: number): string {
-  const m = Math.floor(segundos / 60)
-    .toString()
-    .padStart(2, '0')
-  const s = Math.floor(segundos % 60)
-    .toString()
-    .padStart(2, '0')
-  return `${m}:${s}`
-}
-
-interface EstadoUbicacion {
-  simulacro?: SimulacroActual
-}
-
+/** Migracion del mockup de Stitch "rendir simulacro". Se omitieron los datos que el mockup inventaba
+ * (area/codigo del examen, "modelo DECO", formula de referencia, ritmo vs promedio): no existen en el backend. */
 export default function SimulacroPage() {
-  const { id } = useParams<{ id: string }>()
-  const location = useLocation()
   const navigate = useNavigate()
-  const simulacroInicial = (location.state as EstadoUbicacion | null)?.simulacro
+  const {
+    simulacro,
+    examen,
+    cargando,
+    error,
+    setError,
+    indiceActual,
+    indiceMaximoPermitido,
+    preguntaActual,
+    segundosRestantes,
+    pausado,
+    pausando,
+    finalizando,
+    confirmandoFinalizar,
+    setConfirmandoFinalizar,
+    cerrarConfirmacion,
+    navegadorAbierto,
+    setNavegadorAbierto,
+    estadoGuardado,
+    conteo,
+    finalizar,
+    guardarRespuesta,
+    guardarRespuestaConDebounce,
+    alternarMarcaRevision,
+    irAPregunta,
+    cambiarPausa,
+  } = useSimulacro()
 
-  const [simulacro, setSimulacro] = useState<SimulacroActual | null>(simulacroInicial ?? null)
-  const [indiceActual, setIndiceActual] = useState(0)
-  const [indiceMaximoVisitado, setIndiceMaximoVisitado] = useState(0)
-  const [segundosRestantes, setSegundosRestantes] = useState<number | null>(null)
-  const [cargando, setCargando] = useState(!simulacroInicial)
-  const [error, setError] = useState<string | null>(null)
-  const [pausando, setPausando] = useState(false)
-  const [finalizando, setFinalizando] = useState(false)
-  const debounceRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
-
-  // Siempre se pide el estado fresco al montar, incluso si location.state ya
-  // trae uno (ese `history.state` sobrevive a una recarga F5 - no sirve como
-  // señal de "ya tengo datos actuales"). El valor de location.state solo se
-  // usa para pintar de inmediato sin parpadeo; reanudar() lo corrige enseguida
-  // con las respuestas/tiempo reales (RF-07) - si ya esta finalizado, cae al
-  // catch y se pide el resumen en su lugar.
-  useEffect(() => {
-    if (!id) return
-    reanudarSimulacro(id)
-      .then((actual) => {
-        setSimulacro(actual)
-        setCargando(false)
-      })
-      .catch(async (err) => {
-        if (err instanceof ApiError && err.code === 'SIMULACRO_NO_EDITABLE') {
-          const resumen = await finalizarSimulacro(id)
-          navigate(`/simulacros/${id}/resumen`, { replace: true, state: { resumen } })
-          return
-        }
-        setError('No se pudo cargar el simulacro.')
-        setCargando(false)
-      })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo una vez al montar (por id), no en cada cambio de simulacro
-  }, [id])
-
-  const finalizar = useCallback(async () => {
-    if (!id) return
-    setFinalizando(true)
-    try {
-      const resumen = await finalizarSimulacro(id)
-      navigate(`/simulacros/${id}/resumen`, { state: { resumen } })
-    } catch {
-      setError('No se pudo finalizar el simulacro.')
-      setFinalizando(false)
-    }
-  }, [id, navigate])
-
-  // RF-02: countdown local, resincronizado contra el servidor cada 10s
-  // (docs/02-arquitectura.md secc. 6.9 - polling ligero, alternativa al WS).
-  const simulacroId = simulacro?.id
-  const simulacroEstado = simulacro?.estado
-  useEffect(() => {
-    if (!simulacroId || simulacroEstado !== 'EN_CURSO') return
-    let cancelado = false
-
-    async function sincronizar() {
-      try {
-        const tiempo = await obtenerTiempoRestante(simulacroId!)
-        if (cancelado) return
-        setSegundosRestantes(tiempo.segundosRestantes)
-        if (tiempo.expirado) {
-          await finalizar()
-        }
-      } catch {
-        // fallo transitorio de red: se reintenta en el siguiente tick
-      }
-    }
-
-    sincronizar()
-    const intervalo = setInterval(sincronizar, INTERVALO_SINCRONIZACION_MS)
-    return () => {
-      cancelado = true
-      clearInterval(intervalo)
-    }
-  }, [simulacroId, simulacroEstado, finalizar])
-
-  // countdown visual entre sincronizaciones, contra el reloj local
-  useEffect(() => {
-    if (simulacroEstado !== 'EN_CURSO') return
-    const intervalo = setInterval(() => {
-      setSegundosRestantes((actual) => (actual !== null ? Math.max(0, actual - 1) : actual))
-    }, 1000)
-    return () => clearInterval(intervalo)
-  }, [simulacroEstado])
-
-  const preguntaActual: PreguntaSimulacro | undefined = simulacro?.preguntas[indiceActual]
-
-  const actualizarRespuestaLocal = (respuestaSimulacroId: string, respuestaDada: Record<string, unknown>) => {
-    setSimulacro((actual) => {
-      if (!actual) return actual
-      return {
-        ...actual,
-        preguntas: actual.preguntas.map((p) =>
-          p.respuestaSimulacroId === respuestaSimulacroId ? { ...p, respuestaDada } : p,
-        ),
-      }
-    })
-  }
-
-  function guardarRespuesta(respuestaSimulacroId: string, respuestaDada: Record<string, unknown>) {
-    if (!id) return
-    actualizarRespuestaLocal(respuestaSimulacroId, respuestaDada)
-    autoguardarRespuesta(id, respuestaSimulacroId, respuestaDada).catch(() => {
-      setError('No se pudo guardar tu respuesta, revisa tu conexion.')
-    })
-  }
-
-  function guardarRespuestaConDebounce(respuestaSimulacroId: string, respuestaDada: Record<string, unknown>) {
-    actualizarRespuestaLocal(respuestaSimulacroId, respuestaDada)
-    const pendientes = debounceRef.current
-    const anterior = pendientes.get(respuestaSimulacroId)
-    if (anterior) clearTimeout(anterior)
-    pendientes.set(
-      respuestaSimulacroId,
-      setTimeout(() => {
-        if (!id) return
-        autoguardarRespuesta(id, respuestaSimulacroId, respuestaDada).catch(() => {
-          setError('No se pudo guardar tu respuesta, revisa tu conexion.')
-        })
-        pendientes.delete(respuestaSimulacroId)
-      }, DEBOUNCE_NUMERICA_MS),
+  if (cargando) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 font-body text-slate-700">
+        <Icon name="progress_activity" size={24} className="mr-2 animate-spin text-primary-600" />
+        Cargando simulacro...
+      </div>
     )
   }
 
-  function alternarMarcaRevision(pregunta: PreguntaSimulacro) {
-    if (!id) return
-    const nuevaMarca = !pregunta.marcadaParaRevision
-    setSimulacro((actual) => {
-      if (!actual) return actual
-      return {
-        ...actual,
-        preguntas: actual.preguntas.map((p) =>
-          p.respuestaSimulacroId === pregunta.respuestaSimulacroId ? { ...p, marcadaParaRevision: nuevaMarca } : p,
-        ),
-      }
-    })
-    marcarParaRevision(id, pregunta.respuestaSimulacroId, nuevaMarca).catch(() => {
-      setError('No se pudo actualizar la marca de revision.')
-    })
-  }
-
-  function irAPregunta(indice: number) {
-    if (simulacro?.navegacion === 'SECUENCIAL' && indice > indiceMaximoVisitado) return
-    setIndiceActual(indice)
-    setIndiceMaximoVisitado((max) => Math.max(max, indice))
-  }
-
-  async function pausar() {
-    if (!id) return
-    setPausando(true)
-    try {
-      const actualizado = await pausarSimulacro(id)
-      setSimulacro(actualizado)
-    } catch {
-      setError('No se pudo pausar el simulacro.')
-    } finally {
-      setPausando(false)
-    }
-  }
-
-  async function reanudar() {
-    if (!id) return
-    setPausando(true)
-    try {
-      const actualizado = await reanudarSimulacro(id)
-      setSimulacro(actualizado)
-    } catch {
-      setError('No se pudo reanudar el simulacro.')
-    } finally {
-      setPausando(false)
-    }
-  }
-
-  const totalMarcadas = useMemo(
-    () => simulacro?.preguntas.filter((p) => p.marcadaParaRevision).length ?? 0,
-    [simulacro],
-  )
-
-  if (cargando) return <div className="simulacro-page">Cargando simulacro...</div>
-  if (!simulacro) return <div className="simulacro-page">{error ?? 'Simulacro no encontrado.'}</div>
-
-  return (
-    <div className="simulacro-page">
-      <header className="simulacro-header">
-        <div className="simulacro-timer">
-          {simulacro.estado === 'PAUSADO'
-            ? 'En pausa'
-            : segundosRestantes !== null
-              ? formatearTiempo(segundosRestantes)
-              : '--:--'}
-        </div>
-        <div className="simulacro-acciones-header">
-          {simulacro.permitePausa && simulacro.estado === 'EN_CURSO' && (
-            <button type="button" disabled={pausando} onClick={pausar}>
-              Pausar
-            </button>
-          )}
-          {simulacro.estado === 'PAUSADO' && (
-            <button type="button" disabled={pausando} onClick={reanudar}>
-              Reanudar
-            </button>
-          )}
-          <button type="button" className="simulacro-finalizar" disabled={finalizando} onClick={finalizar}>
-            {finalizando ? 'Finalizando...' : 'Finalizar simulacro'}
+  if (!simulacro || simulacro.preguntas.length === 0) {
+    // Sin preguntas: intentos creados antes de que el backend rechazara sorteos vacios - sin esto solo se veia el cronometro.
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 font-body text-slate-900">
+        <div className="flex max-w-md flex-col items-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent-100 text-accent-600">
+            <Icon name={simulacro ? 'inventory_2' : 'error'} size={30} />
+          </div>
+          <p className="text-sm text-slate-700">
+            {simulacro
+              ? 'Este simulacro no tiene preguntas: el examen no tenía preguntas disponibles cuando lo iniciaste. Avisa a tu docente o elige otro examen.'
+              : (error ?? 'Simulacro no encontrado.')}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/examenes')}
+            className="mt-5 h-11 rounded-xl bg-primary-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800"
+          >
+            Volver a exámenes
           </button>
         </div>
-      </header>
+      </div>
+    )
+  }
 
-      {error && <p className="simulacro-error">{error}</p>}
+  const valorPregunta = examen?.preguntas.find((p) => p.preguntaId === preguntaActual?.preguntaId)?.puntajeAsignado
+  const esUltima = indiceActual === simulacro.preguntas.length - 1
 
-      <nav className="simulacro-navegacion" aria-label="Preguntas">
-        {simulacro.preguntas.map((p, indice) => {
-          const bloqueada = simulacro.navegacion === 'SECUENCIAL' && indice > indiceMaximoVisitado
-          return (
-            <button
-              key={p.respuestaSimulacroId}
-              type="button"
-              disabled={bloqueada}
-              className={
-                'simulacro-nav-item' +
-                (indice === indiceActual ? ' activa' : '') +
-                (p.marcadaParaRevision ? ' marcada' : '') +
-                (tieneRespuesta(p) ? ' respondida' : '')
-              }
-              onClick={() => irAPregunta(indice)}
-            >
-              {indice + 1}
-            </button>
-          )
-        })}
-      </nav>
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-50 font-body text-slate-900">
+      <CabeceraSimulacro
+        examen={examen}
+        segundosRestantes={segundosRestantes}
+        pausado={pausado}
+        permitePausa={simulacro.permitePausa}
+        pausando={pausando}
+        finalizando={finalizando}
+        estadoGuardado={estadoGuardado}
+        conteo={conteo}
+        onCambiarPausa={cambiarPausa}
+        onFinalizar={() => setConfirmandoFinalizar(true)}
+      />
 
-      {totalMarcadas > 0 && <p className="simulacro-marcadas">{totalMarcadas} pregunta(s) marcada(s) para revision</p>}
+      <main className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 content-start items-start gap-4 px-4 py-4 sm:px-6 lg:grid-cols-12 lg:gap-5 lg:py-5">
+        <button
+          type="button"
+          onClick={() => setNavegadorAbierto((v) => !v)}
+          aria-expanded={navegadorAbierto}
+          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm lg:hidden"
+        >
+          <span className="flex items-center gap-2">
+            <Icon name="grid_view" size={24} className="text-primary-600" />
+            Ver preguntas ({indiceActual + 1}/{conteo.total})
+          </span>
+          <Icon name={navegadorAbierto ? 'expand_less' : 'expand_more'} size={24} />
+        </button>
 
-      {preguntaActual && (
-        <section className="simulacro-pregunta">
-          <div className="simulacro-pregunta-header">
-            <span>
-              Pregunta {indiceActual + 1} de {simulacro.preguntas.length}
-            </span>
-            <button type="button" onClick={() => alternarMarcaRevision(preguntaActual)}>
-              {preguntaActual.marcadaParaRevision ? 'Quitar marca' : 'Marcar para revisar'}
-            </button>
-          </div>
-
-          <div className="simulacro-enunciado" dangerouslySetInnerHTML={{ __html: preguntaActual.enunciadoHtml }} />
-
-          <RespuestaPregunta
-            pregunta={preguntaActual}
-            onCambiar={(respuestaDada) => guardarRespuesta(preguntaActual.respuestaSimulacroId, respuestaDada)}
-            onCambiarConDebounce={(respuestaDada) =>
-              guardarRespuestaConDebounce(preguntaActual.respuestaSimulacroId, respuestaDada)
-            }
+        <aside
+          className={`${navegadorAbierto ? 'block' : 'hidden'} rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-28 lg:col-span-4 lg:block xl:col-span-3`}
+        >
+          <NavegadorPreguntas
+            preguntas={simulacro.preguntas}
+            indiceActual={indiceActual}
+            indiceMaximoPermitido={indiceMaximoPermitido}
+            onIr={irAPregunta}
           />
+        </aside>
 
-          <div className="simulacro-pregunta-nav">
-            <button type="button" disabled={indiceActual === 0} onClick={() => irAPregunta(indiceActual - 1)}>
-              Anterior
-            </button>
-            <button
-              type="button"
-              disabled={indiceActual === simulacro.preguntas.length - 1}
-              onClick={() => irAPregunta(indiceActual + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-8 xl:col-span-9">
+          {error && (
+            <div role="alert" className="flex items-center gap-2 border-b border-rose-100 bg-rose-50 px-5 py-2.5 text-sm font-medium text-rose-700">
+              <Icon name="error" size={18} />
+              <span className="flex-1">{error}</span>
+              <button type="button" onClick={() => setError(null)} aria-label="Cerrar aviso" className="text-rose-400 hover:text-rose-700">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+          )}
+
+          {pausado ? (
+            <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 p-8 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+                <Icon name="pause" size={36} />
+              </div>
+              <h2 className="font-display text-xl font-bold text-slate-900">Simulacro en pausa</h2>
+              <p className="max-w-sm text-sm text-slate-700">Tu tiempo está congelado. Las preguntas se ocultan mientras dure la pausa.</p>
+              <button
+                type="button"
+                disabled={pausando}
+                onClick={() => cambiarPausa('reanudar')}
+                className="mt-2 flex h-10 items-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:opacity-60"
+              >
+                <Icon name="play_arrow" size={18} />
+                Reanudar
+              </button>
+            </div>
+          ) : (
+            preguntaActual && (
+              <PanelPregunta
+                pregunta={preguntaActual}
+                indiceActual={indiceActual}
+                total={conteo.total}
+                valorPregunta={valorPregunta}
+                esUltima={esUltima}
+                onAlternarMarca={() => alternarMarcaRevision(preguntaActual)}
+                onGuardar={(respuestaDada) => guardarRespuesta(preguntaActual.respuestaSimulacroId, respuestaDada)}
+                onGuardarConDebounce={(respuestaDada) => guardarRespuestaConDebounce(preguntaActual.respuestaSimulacroId, respuestaDada)}
+                onIr={irAPregunta}
+                onFinalizar={() => setConfirmandoFinalizar(true)}
+              />
+            )
+          )}
         </section>
+      </main>
+
+      <footer className="hidden border-t border-slate-200 bg-white px-6 py-2 text-[11px] text-slate-500 md:block">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between">
+          <span className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-primary-600" />
+            Modo concentración activo
+          </span>
+          <span>
+            Atajos: <kbd className="font-semibold text-slate-700">A–E</kbd> elegir alternativa ·{' '}
+            <kbd className="font-semibold text-slate-700">← →</kbd> navegar
+          </span>
+        </div>
+      </footer>
+
+      {confirmandoFinalizar && (
+        <ConfirmarFinalizarModal
+          respondidas={conteo.respondidas}
+          sinResponder={conteo.total - conteo.respondidas}
+          marcadas={conteo.marcadas}
+          finalizando={finalizando}
+          onCancelar={cerrarConfirmacion}
+          onConfirmar={finalizar}
+        />
       )}
     </div>
   )
-}
-
-function tieneRespuesta(pregunta: PreguntaSimulacro): boolean {
-  const valores = Object.values(pregunta.respuestaDada)
-  return valores.length > 0 && valores.some((v) => v !== null && !(Array.isArray(v) && v.length === 0))
-}
-
-function RespuestaPregunta({
-  pregunta,
-  onCambiar,
-  onCambiarConDebounce,
-}: {
-  pregunta: PreguntaSimulacro
-  onCambiar: (respuestaDada: Record<string, unknown>) => void
-  onCambiarConDebounce: (respuestaDada: Record<string, unknown>) => void
-}) {
-  switch (pregunta.tipoPregunta) {
-    case 'OPCION_UNICA': {
-      const seleccionada = pregunta.respuestaDada.alternativaId as string | undefined
-      return (
-        <div className="simulacro-alternativas">
-          {pregunta.alternativas.map((alt) => (
-            <label key={alt.id} className="simulacro-alternativa">
-              <input
-                type="radio"
-                name={pregunta.respuestaSimulacroId}
-                checked={seleccionada === alt.id}
-                onChange={() => onCambiar({ alternativaId: alt.id })}
-              />
-              <span dangerouslySetInnerHTML={{ __html: alt.textoHtml }} />
-            </label>
-          ))}
-        </div>
-      )
-    }
-
-    case 'OPCION_MULTIPLE': {
-      const seleccionadas = (pregunta.respuestaDada.alternativaIds as string[] | undefined) ?? []
-      return (
-        <div className="simulacro-alternativas">
-          {pregunta.alternativas.map((alt) => (
-            <label key={alt.id} className="simulacro-alternativa">
-              <input
-                type="checkbox"
-                checked={seleccionadas.includes(alt.id)}
-                onChange={(e) => {
-                  const nuevas = e.target.checked
-                    ? [...seleccionadas, alt.id]
-                    : seleccionadas.filter((id) => id !== alt.id)
-                  onCambiar({ alternativaIds: nuevas })
-                }}
-              />
-              <span dangerouslySetInnerHTML={{ __html: alt.textoHtml }} />
-            </label>
-          ))}
-        </div>
-      )
-    }
-
-    case 'NUMERICA': {
-      const valor = (pregunta.respuestaDada.valor as number | undefined) ?? ''
-      return (
-        <input
-          type="number"
-          className="simulacro-input-numerico"
-          value={valor}
-          onChange={(e) => {
-            const num = e.target.value === '' ? null : Number(e.target.value)
-            onCambiarConDebounce({ valor: num })
-          }}
-        />
-      )
-    }
-
-    default:
-      return <p className="simulacro-no-soportado">Este tipo de pregunta todavia no se puede responder desde aqui.</p>
-  }
 }

@@ -1,0 +1,31 @@
+# CI del frontend: lint, tests y build (que incluye el typecheck) en cada push a main y en
+# cada PR. Ver simulaedu-be/docs/12-ci-cd.md.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Vite 8 / Vitest 4 / TypeScript 6 requieren Node 22.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Build (tsc -b + vite build)
+        run: npm run build
