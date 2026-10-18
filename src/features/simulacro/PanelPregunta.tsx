@@ -1,8 +1,10 @@
+import { useMemo } from 'react'
 import type { PreguntaSimulacro } from '../../api/simulacrosApi'
 import { Icon } from '../../components/ui'
 import { htmlSeguro } from '../../lib/html'
 import { CLASE_HTML_ENRIQUECIDO } from './estilosSimulacro'
-import { formatearTiempoSugerido, tieneRespuesta } from './formatoSimulacro'
+import { formatearTiempoSugerido, separarAudios, tieneRespuesta } from './formatoSimulacro'
+import ReproductorLimitado from './ReproductorLimitado'
 import RespuestaPregunta from './RespuestaPregunta'
 
 const DIFICULTAD: Record<PreguntaSimulacro['dificultad'], { etiqueta: string; clase: string }> = {
@@ -19,6 +21,8 @@ interface Props {
   valorPregunta: number | undefined
   esUltima: boolean
   onAlternarMarca: () => void
+  /** Listening: registra una escucha del audio en el servidor; devuelve si se puede reproducir. */
+  onEscuchar: () => Promise<boolean>
   onGuardar: (respuestaDada: Record<string, unknown>) => void
   onGuardarConDebounce: (respuestaDada: Record<string, unknown>) => void
   onIr: (indice: number) => void
@@ -34,11 +38,20 @@ export default function PanelPregunta({
   valorPregunta,
   esUltima,
   onAlternarMarca,
+  onEscuchar,
   onGuardar,
   onGuardarConDebounce,
   onIr,
   onFinalizar,
 }: Props) {
+  // Con limite de escuchas (simulacro completo) el audio va en el reproductor propio, no en el nativo.
+  const { enunciado, audios } = useMemo(() => {
+    const limpio = htmlSeguro(pregunta.enunciadoHtml)
+    if (pregunta.escuchasRestantes === null) return { enunciado: limpio, audios: [] }
+    const separado = separarAudios(limpio)
+    return { enunciado: separado.html, audios: separado.audios }
+  }, [pregunta.enunciadoHtml, pregunta.escuchasRestantes])
+
   return (
     <>
       <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -84,9 +97,13 @@ export default function PanelPregunta({
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5 sm:px-6">
+        {pregunta.escuchasRestantes !== null &&
+          audios.map((src) => (
+            <ReproductorLimitado key={src} src={src} escuchasRestantes={pregunta.escuchasRestantes ?? 0} onEscuchar={onEscuchar} />
+          ))}
         <div
           className={`text-[15px] leading-7 text-slate-900 sm:text-base ${CLASE_HTML_ENRIQUECIDO}`}
-          dangerouslySetInnerHTML={{ __html: htmlSeguro(pregunta.enunciadoHtml) }}
+          dangerouslySetInnerHTML={{ __html: enunciado }}
         />
 
         <RespuestaPregunta

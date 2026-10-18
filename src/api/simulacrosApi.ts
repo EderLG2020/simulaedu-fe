@@ -26,6 +26,8 @@ export interface PreguntaSimulacro {
   alternativas: AlternativaSimulacro[]
   respuestaDada: Record<string, unknown>
   marcadaParaRevision: boolean
+  /** Listening: escuchas del audio que quedan (simulacro completo, maximo 2). null = sin limite. */
+  escuchasRestantes: number | null
 }
 
 export interface SimulacroActual {
@@ -97,6 +99,11 @@ export function marcarParaRevision(
   })
 }
 
+/** Listening: registra una reproduccion del audio de la pregunta antes de reproducirlo. */
+export function registrarEscucha(simulacroId: string, respuestaId: string): Promise<{ escuchasRestantes: number | null }> {
+  return apiFetch(`/simulacros/${simulacroId}/respuestas/${respuestaId}/escuchas`, { method: 'POST' })
+}
+
 export function pausarSimulacro(simulacroId: string): Promise<SimulacroActual> {
   return apiFetch(`/simulacros/${simulacroId}/pausar`, { method: 'PATCH' })
 }
@@ -111,6 +118,42 @@ export async function finalizarSimulacro(simulacroId: string): Promise<ResumenSi
   void queryClient.invalidateQueries({ queryKey: claves.historialTodo })
   void queryClient.invalidateQueries({ queryKey: claves.noLeidas })
   return resumen
+}
+
+export type ResultadoPregunta = 'CORRECTA' | 'INCORRECTA' | 'EN_BLANCO' | 'PENDIENTE_REVISION'
+
+export interface AlternativaRevision extends AlternativaSimulacro {
+  esCorrecta: boolean
+}
+
+/** Una pregunta del simulacro terminado: lo que marco el alumno, la respuesta correcta y la explicacion. */
+export interface PreguntaRevision {
+  numero: number
+  respuestaSimulacroId: string
+  preguntaId: string
+  tipoPregunta: TipoPregunta
+  dificultad: Dificultad
+  temaNombre: string
+  enunciadoHtml: string
+  /** Ya trae la respuesta correcta (paresCorrectos, valorCorrecto). */
+  metadataTipo: Record<string, unknown>
+  alternativas: AlternativaRevision[]
+  respuestaDada: Record<string, unknown>
+  resultado: ResultadoPregunta
+  puntajeObtenido: number | null
+  /** null si el plan no incluye explicaciones (RN-09) o si la pregunta no tiene una. */
+  explicacionHtml: string | null
+}
+
+export interface RevisionSimulacro {
+  simulacroId: string
+  explicacionesDisponibles: boolean
+  preguntas: PreguntaRevision[]
+}
+
+/** CU-05: revision pregunta por pregunta; solo con el simulacro terminado. */
+export function obtenerRevision(simulacroId: string): Promise<RevisionSimulacro> {
+  return apiFetch<RevisionSimulacro>(`/simulacros/${simulacroId}/revision`)
 }
 
 export interface HistorialSimulacro {

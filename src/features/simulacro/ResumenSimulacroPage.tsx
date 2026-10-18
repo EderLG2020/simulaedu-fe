@@ -1,13 +1,14 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import type { ExamenResumen } from '../../api/examenesApi'
 import type { ResumenSimulacro } from '../../api/simulacrosApi'
 import { Icon, PanelVacio } from '../../components/ui'
 import PaginaAlumno from '../home/PaginaAlumno'
 import { formatearDuracionLarga, formatearPuntos } from './formatoSimulacro'
+import RevisionRespuestas from './RevisionRespuestas'
 
 /** Migracion del mockup de Stitch "resultado del simulacro". Se omitieron los datos que el mockup inventaba
- * (percentil, puesto, cortes de admision por carrera, comparativa vs simulacro previo, PDF/compartir,
- * solucionario): no existen en el backend y serian cifras o botones falsos. */
+ * (percentil, puesto, cortes de admision por carrera, comparativa vs simulacro previo, PDF/compartir):
+ * no existen en el backend y serian cifras o botones falsos. El solucionario es la revision de respuestas. */
 
 interface EstadoUbicacion {
   resumen?: ResumenSimulacro
@@ -53,6 +54,7 @@ function Acciones() {
 
 export default function ResumenSimulacroPage() {
   const location = useLocation()
+  const { id } = useParams()
   const { resumen, examen } = (location.state as EstadoUbicacion | null) ?? {}
 
   if (!resumen) {
@@ -226,6 +228,8 @@ export default function ResumenSimulacroPage() {
           </ol>
         </section>
       )}
+
+      {id && <RevisionRespuestas simulacroId={id} />}
 
       <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">

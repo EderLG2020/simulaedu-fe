@@ -1,6 +1,6 @@
 import { cleanup, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ResumenSimulacro } from '../../api/simulacrosApi'
 import ResumenSimulacroPage from './ResumenSimulacroPage'
 import { renderConQuery } from '../../test/conQuery'
@@ -27,6 +27,9 @@ function renderPagina(state: unknown) {
     </MemoryRouter>,
   )
 }
+
+// La revision pregunta por pregunta tiene su propio test (RevisionRespuestas.test.tsx): aqui queda cargando.
+vi.mock('../../api/simulacrosApi', () => ({ obtenerRevision: () => new Promise(() => {}) }))
 
 afterEach(cleanup)
 

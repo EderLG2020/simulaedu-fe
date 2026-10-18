@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { mensajeDeError } from '../../api/client'
-import { actualizarPregunta, crearPregunta, subirArchivoPregunta, subirImagenPregunta, type Pregunta } from '../../api/preguntasApi'
+import { actualizarPregunta, crearPregunta, subirArchivoPregunta, subirImagenPregunta, type GuionAudio, type Pregunta } from '../../api/preguntasApi'
 import {
   envolverSeleccion,
   escaparCodigo,
   formularioARequest,
   FORMULARIO_VACIO,
+  insertarAudioDialogo,
   preguntaAFormulario,
   type AlternativaForm,
   type FormularioPregunta,
@@ -22,11 +23,13 @@ export function useFormularioPregunta(onGuardado: () => void) {
   const [subiendoImagen, setSubiendoImagen] = useState<string | null>(null)
   const [subiendoAudio, setSubiendoAudio] = useState(false)
   const [vistaPrevia, setVistaPrevia] = useState(false)
+  const [dialogoAbierto, setDialogoAbierto] = useState(false)
 
   function abrirCrear() {
     setPreguntaEnEdicion(null)
     setFormulario(FORMULARIO_VACIO)
     setErrorFormulario(null)
+    setDialogoAbierto(false)
     setModalAbierto(true)
   }
 
@@ -34,6 +37,7 @@ export function useFormularioPregunta(onGuardado: () => void) {
     setPreguntaEnEdicion(pregunta)
     setFormulario(preguntaAFormulario(pregunta))
     setErrorFormulario(null)
+    setDialogoAbierto(false)
     setModalAbierto(true)
   }
 
@@ -97,6 +101,16 @@ export function useFormularioPregunta(onGuardado: () => void) {
     }
   }
 
+  /** Listening: inserta (o reemplaza) el audio del dialogo generado y guarda su guion con la pregunta. */
+  function insertarDialogo(guion: GuionAudio & { audioUrl: string }) {
+    setFormulario((f) => ({
+      ...f,
+      enunciadoHtml: insertarAudioDialogo(f.enunciadoHtml, f.guionAudio?.audioUrl, guion.audioUrl),
+      guionAudio: guion,
+    }))
+    setDialogoAbierto(false)
+  }
+
   /** Envuelve la seleccion en un bloque de codigo, escapada para que `<`, `>` y `&` se vean tal cual. */
   function insertarCodigo() {
     const textarea = document.getElementById('enunciado-textarea') as HTMLTextAreaElement | null
@@ -155,6 +169,9 @@ export function useFormularioPregunta(onGuardado: () => void) {
     subiendoAudio,
     vistaPrevia,
     setVistaPrevia,
+    dialogoAbierto,
+    setDialogoAbierto,
+    insertarDialogo,
     esOpciones,
     abrirCrear,
     abrirEditar,
