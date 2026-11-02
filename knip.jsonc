@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/web": {
+      // index.html carga src/app/main.tsx; las pruebas y scripts los detecta knip por sus plugins.
+      "entry": ["scripts/*.mjs"]
+    },
+    "packages/*": {}
+  }
+}

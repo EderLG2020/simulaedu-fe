@@ -1,0 +1,23 @@
+{
+  "name": "@simulaedu/architecture",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reglas de arquitectura de las apps (límites entre capas y features, capas de shared/, ciclos, mocks) y la matriz de dependencias entre features. Solo para pruebas y lint: se consume desde el código fuente.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./matrices.json": "./src/matrices.json"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "archunit": "2.5.4",
+    "eslint": "^10.9.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.11"
+  }
+}

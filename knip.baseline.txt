@@ -1,0 +1,3 @@
+# Hallazgos de knip que ya existían. `pnpm knip` falla si aparece uno nuevo o si uno de estos se corrige y sigue aquí.
+# Para regenerar el archivo tras corregir: UPDATE_BASELINE=1 pnpm knip
+duplicates: apps/web/src/shared/api/preguntasApi.ts: subirArchivoPregunta | subirImagenPregunta

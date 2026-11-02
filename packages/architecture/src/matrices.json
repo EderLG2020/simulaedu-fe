@@ -1,0 +1,29 @@
+{
+  "web": {
+    "sharedFeatures": [],
+    "features": {
+      "admin": ["panel"],
+      "auth": [],
+      "coordinador": ["panel"],
+      "docente": ["panel"],
+      "examenes": [],
+      "home": ["perfil"],
+      "landing": [],
+      "notificaciones": [],
+      "panel": ["perfil"],
+      "perfil": [],
+      "preguntas": [],
+      "ranking": [],
+      "simulacro": []
+    },
+    "sharedLayers": {
+      "lib": [],
+      "stores": ["lib"],
+      "api": ["lib", "stores"],
+      "hooks": ["lib", "stores", "api"],
+      "components": ["lib", "stores", "hooks"],
+      "assets": [],
+      "test": ["lib", "stores", "api", "hooks", "components"]
+    }
+  }
+}

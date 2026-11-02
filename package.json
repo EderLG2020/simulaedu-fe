@@ -1,47 +1,31 @@
 {
   "name": "simulaedu-fe",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Monorepo frontend de SimulaEdu: app web (apps/web) y paquetes compartidos (packages/*).",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "iconos": "node scripts/iconos.mjs"
-  },
-  "dependencies": {
-    "@radix-ui/react-accordion": "^1.2.20",
-    "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/react-query": "^5.104.4",
-    "dompurify": "^3.4.16",
-    "motion": "^13.2.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3",
-    "tailwindcss": "^4.3.3",
-    "zustand": "^5.0.15"
+    "dev": "pnpm --filter @simulaedu/web dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "knip": "node packages/architecture/knip-with-baseline.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.6",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "@vitest/ui": "^4.1.11",
     "eslint": "^10.9.0",
+    "eslint-plugin-boundaries": "7.4.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.11.0",
-    "jsdom": "^29.1.1",
+    "knip": "6.44.1",
+    "turbo": "2.11.10",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.67.0",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "typescript-eslint": "^8.67.0"
   }
 }

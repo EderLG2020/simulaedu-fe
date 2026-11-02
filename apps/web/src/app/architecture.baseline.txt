@@ -1,0 +1,2 @@
+# Violaciones de arquitectura que ya existían. La prueba falla si aparece una nueva o si una de estas se corrige
+# y sigue aquí. Para regenerar el archivo tras corregir: UPDATE_BASELINE=1 pnpm test src/app/architecture.test.ts
