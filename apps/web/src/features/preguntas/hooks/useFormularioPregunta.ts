@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { mensajeDeError } from '../../../shared/api/client'
 import { actualizarPregunta, crearPregunta, subirArchivoPregunta, subirImagenPregunta, type GuionAudio, type Pregunta } from '../../../shared/api/preguntasApi'
+import { traducirTextos } from '../../../shared/api/traduccionApi'
+import type { Idioma } from '../../../shared/lib/tipos/idioma'
+import { aplicarTraduccion, textosDePregunta } from '../lib/traduccionPregunta'
 import {
   envolverSeleccion,
   escaparCodigo,
@@ -24,6 +27,7 @@ export function useFormularioPregunta(onGuardado: () => void) {
   const [subiendoAudio, setSubiendoAudio] = useState(false)
   const [vistaPrevia, setVistaPrevia] = useState(false)
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
+  const [traduciendo, setTraduciendo] = useState<Idioma | null>(null)
 
   function abrirCrear() {
     setPreguntaEnEdicion(null)
@@ -111,6 +115,21 @@ export function useFormularioPregunta(onGuardado: () => void) {
     setDialogoAbierto(false)
   }
 
+  /** Boton «Traducir»: traduce con DeepL todos los textos del formulario; el docente revisa y guarda. */
+  async function traducir(destino: Idioma) {
+    setErrorFormulario(null)
+    setTraduciendo(destino)
+    try {
+      const { html, texto } = textosDePregunta(formulario)
+      const [htmlTraducido, textoTraducido] = await Promise.all([traducirTextos(html, destino, { html: true }), traducirTextos(texto, destino)])
+      setFormulario((f) => aplicarTraduccion(f, { html: htmlTraducido, texto: textoTraducido }))
+    } catch (err) {
+      setErrorFormulario(mensajeDeError(err, 'No se pudo traducir la pregunta.'))
+    } finally {
+      setTraduciendo(null)
+    }
+  }
+
   /** Envuelve la seleccion en un bloque de codigo, escapada para que `<`, `>` y `&` se vean tal cual. */
   function insertarCodigo() {
     const textarea = document.getElementById('enunciado-textarea') as HTMLTextAreaElement | null
@@ -172,6 +191,8 @@ export function useFormularioPregunta(onGuardado: () => void) {
     dialogoAbierto,
     setDialogoAbierto,
     insertarDialogo,
+    traduciendo,
+    traducir,
     esOpciones,
     abrirCrear,
     abrirEditar,

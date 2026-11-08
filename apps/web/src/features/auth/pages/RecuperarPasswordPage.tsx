@@ -4,8 +4,10 @@ import { recuperarPassword } from '../../../shared/api/authApi'
 import AuthShell from '../components/AuthShell'
 import { card, input, inputIcon, label, primaryBtn, secondaryBtn } from '../lib/authStyles'
 import { Icon } from '../../../shared/components/ui'
+import { useSeo } from '../../../shared/hooks/useSeo'
 
 export default function RecuperarPasswordPage() {
+  useSeo({ titulo: 'Recuperar contraseña', ruta: '/recuperar-password', noindex: true })
   const [email, setEmail] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)

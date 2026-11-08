@@ -8,8 +8,10 @@ import AuthShell from '../components/AuthShell'
 import { card, primaryBtn } from '../lib/authStyles'
 import { consumirEstadoGoogle, obtenerRedirectUri } from '../lib/googleAuth'
 import { Icon } from '../../../shared/components/ui'
+import { useSeo } from '../../../shared/hooks/useSeo'
 
 export default function GoogleCallbackPage() {
+  useSeo({ titulo: 'Ingresando con Google', noindex: true })
   const navigate = useNavigate()
   const { setSesion } = useAuth()
   const [searchParams] = useSearchParams()

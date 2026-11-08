@@ -4,10 +4,12 @@ import { restablecerPassword } from '../../../shared/api/authApi'
 import AuthShell from '../components/AuthShell'
 import { card, input, inputIcon, label, primaryBtn, secondaryBtn } from '../lib/authStyles'
 import { Icon } from '../../../shared/components/ui'
+import { useSeo } from '../../../shared/hooks/useSeo'
 
 type Estado = 'formulario' | 'exito' | 'expirado'
 
 export default function RestablecerPasswordPage() {
+  useSeo({ titulo: 'Restablecer contraseña', ruta: '/restablecer-password', noindex: true })
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
   const [nuevaPassword, setNuevaPassword] = useState('')

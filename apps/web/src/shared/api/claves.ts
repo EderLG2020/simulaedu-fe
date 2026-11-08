@@ -34,7 +34,17 @@ export const claves = {
   },
   revisiones: ['revisiones'] as const,
   reporte: (reporteId: string) => ['reportes', reporteId] as const,
-  coordinador: ['coordinador'] as const,
+  /** Panel del coordinador: toda accion invalida `todo` (licencias, secciones y metricas se mueven juntas). */
+  coordinador: {
+    todo: ['coordinador'] as const,
+    institucion: ['coordinador', 'institucion'] as const,
+    dashboard: ['coordinador', 'dashboard'] as const,
+    alumnos: ['coordinador', 'alumnos'] as const,
+    alumno: (alumnoId: string) => ['coordinador', 'alumnos', alumnoId] as const,
+    docentes: ['coordinador', 'docentes'] as const,
+    secciones: ['coordinador', 'secciones'] as const,
+    seccion: (seccionId: string) => ['coordinador', 'secciones', seccionId] as const,
+  },
   admin: {
     cursos: ['admin', 'cursos'] as const,
     universidades: ['admin', 'universidades'] as const,

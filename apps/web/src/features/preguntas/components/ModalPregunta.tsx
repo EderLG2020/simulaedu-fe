@@ -1,5 +1,6 @@
 import type { CursoConTemas } from '../../../shared/api/cursosApi'
 import type { UniversidadResumen } from '../../../shared/api/universidadesApi'
+import BotonTraducir from '../../../shared/components/BotonTraducir'
 import { Alert, Badge, Button, Field, FieldGroup, Icon, Input, Modal, SegmentedControl, Select, Textarea } from '../../../shared/components/ui'
 import CamposPorTipo from './CamposPorTipo'
 import EditorEnunciado from './EditorEnunciado'
@@ -16,7 +17,7 @@ interface Props {
 
 /** Modal de crear/editar pregunta. El estado vive en useFormularioPregunta (lo instancia la pagina). */
 export default function ModalPregunta({ form, cursos, universidades, universidadANombre }: Props) {
-  const { preguntaEnEdicion, formulario, setFormulario, errorFormulario, guardando, cerrarModal, handleGuardar } = form
+  const { preguntaEnEdicion, formulario, setFormulario, errorFormulario, guardando, cerrarModal, handleGuardar, traduciendo, traducir } = form
 
   return (
     <Modal
@@ -29,13 +30,18 @@ export default function ModalPregunta({ form, cursos, universidades, universidad
           <Button variant="ghost" onClick={cerrarModal} disabled={guardando}>
             Cancelar
           </Button>
-          <Button onClick={handleGuardar} loading={guardando}>
+          <Button onClick={handleGuardar} loading={guardando} disabled={traduciendo !== null}>
             {guardando ? 'Guardando...' : 'Guardar pregunta'}
           </Button>
         </>
       }
     >
       {errorFormulario && <Alert>{errorFormulario}</Alert>}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <p className="text-xs text-slate-500">Traduce enunciado, alternativas y explicación. Revisa el resultado antes de guardar.</p>
+        <BotonTraducir que="la pregunta" etiqueta="Traducir pregunta" traduciendo={traduciendo} onTraducir={traducir} disabled={guardando} />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label="Tema" required>

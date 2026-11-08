@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Usuario } from '../../../shared/api/authApi'
@@ -92,5 +92,23 @@ describe('RankingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Global/ }))
     await screen.findByText('Aún no hay nadie en este ranking')
     expect(mocks.ranking).toHaveBeenLastCalledWith('GLOBAL', 'HISTORICO', null)
+  })
+
+  it('si pertenece a una institucion muestra la pestaña Mi institución con su ranking interno', async () => {
+    useAuthStore.setState({ usuario: { ...usuarioBase, institucionId: 'inst-1' } })
+    mocks.ranking.mockResolvedValue(ranking([]))
+    renderPagina()
+
+    await screen.findByText('Aún no hay nadie en este ranking')
+    fireEvent.click(screen.getByRole('button', { name: /Mi institución/ }))
+    await waitFor(() => expect(mocks.ranking).toHaveBeenLastCalledWith('INSTITUCION', 'HISTORICO', 'inst-1'))
+  })
+
+  it('sin institucion no ofrece la pestaña Mi institución', async () => {
+    mocks.ranking.mockResolvedValue(ranking([]))
+    renderPagina()
+
+    await screen.findByText('Aún no hay nadie en este ranking')
+    expect(screen.queryByRole('button', { name: /Mi institución/ })).not.toBeInTheDocument()
   })
 })

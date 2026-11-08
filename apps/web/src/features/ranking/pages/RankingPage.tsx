@@ -10,7 +10,7 @@ import { useAuth } from '../../../shared/hooks/useAuth'
 import { useUniversidades } from '../../../shared/hooks/useCatalogos'
 import PaginaAlumno, { CLASE_CTA } from '../../../shared/components/PaginaAlumno'
 
-type Alcance = 'GLOBAL' | 'UNIVERSIDAD'
+type Alcance = 'GLOBAL' | 'UNIVERSIDAD' | 'INSTITUCION'
 
 const OPCIONES_PERIODO: { value: PeriodoRanking; label: string }[] = [
   { value: 'SEMANAL', label: 'Semana' },
@@ -130,15 +130,17 @@ function SinAcceso() {
 export default function RankingPage() {
   const { usuario } = useAuth()
   const universidadMetaId = usuario?.universidadObjetivoId ?? null
+  const institucionId = usuario?.institucionId ?? null
 
   const [alcance, setAlcance] = useState<Alcance>(universidadMetaId ? 'UNIVERSIDAD' : 'GLOBAL')
   const [periodo, setPeriodo] = useState<PeriodoRanking>('HISTORICO')
   const [pagina, setPagina] = useState(1)
   const universidadMeta = useUniversidades().data?.find((u) => u.id === universidadMetaId) ?? null
 
-  // Sin universidad meta, el unico alcance posible es el global.
-  const alcanceEfectivo: Alcance = universidadMetaId ? alcance : 'GLOBAL'
-  const referenciaId = alcanceEfectivo === 'UNIVERSIDAD' ? universidadMetaId : null
+  // Sin universidad meta (o sin institucion) esa pestaña no existe: se cae al global.
+  const alcanceEfectivo: Alcance =
+    (alcance === 'UNIVERSIDAD' && !universidadMetaId) || (alcance === 'INSTITUCION' && !institucionId) ? 'GLOBAL' : alcance
+  const referenciaId = alcanceEfectivo === 'UNIVERSIDAD' ? universidadMetaId : alcanceEfectivo === 'INSTITUCION' ? institucionId : null
   const consulta = useQuery({
     queryKey: claves.ranking(alcanceEfectivo, periodo, referenciaId),
     queryFn: () => obtenerRanking(alcanceEfectivo, periodo, referenciaId),
@@ -158,6 +160,7 @@ export default function RankingPage() {
 
   const opcionesAlcance: { value: Alcance; label: string; icon: string }[] = [
     ...(universidadMetaId ? [{ value: 'UNIVERSIDAD' as const, label: universidadMeta?.siglas ?? 'Mi universidad', icon: 'school' }] : []),
+    ...(institucionId ? [{ value: 'INSTITUCION' as const, label: 'Mi institución', icon: 'apartment' }] : []),
     { value: 'GLOBAL', label: 'Global', icon: 'public' },
   ]
 

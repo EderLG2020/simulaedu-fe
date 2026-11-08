@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-PE">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -16,7 +16,60 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=account_balance,add,add_photo_alternate,alternate_email,analytics,apartment,architecture,arrow_back,arrow_downward,arrow_forward,arrow_right_alt,arrow_upward,article,assignment,assignment_turned_in,auto_graph,auto_stories,autorenew,backspace,badge,balance,bar_chart,biotech,block,bolt,bookmark,bookmark_added,calculate,calendar_today,cancel,check,check_box,check_box_outline_blank,check_circle,chevron_left,chevron_right,close,cloud_done,cloud_off,cloud_upload,code,compare_arrows,construction,content_copy,corporate_fare,dashboard,database,delete,description,diversity_3,domain,domain_add,done,done_all,download,drafts,eco,edit,edit_note,email,emoji_events,error,event_available,event_busy,expand_less,expand_more,fact_check,flag,folder,folder_zip,format_list_numbered,forward_to_inbox,function,gavel,grade,graphic_eq,grid_view,group,groups,headphones,headset_off,help,history,history_edu,history_toggle_off,home,hourglass_empty,hourglass_top,how_to_reg,image,inbox,info,inventory_2,join_inner,key,lan,language,leaderboard,library_books,lightbulb,link_off,lock,lock_reset,login,logout,mail,mark_email_read,mark_email_unread,memory,menu,menu_book,message,military_tech,monitoring,network_check,notification_important,notifications,notifications_off,palette,password,pause,pause_circle,payments,person,person_add,person_check,person_off,person_remove,pin,play_arrow,play_circle,progress_activity,psychology,public,publish,query_stats,quiz,radio,radio_button_checked,radio_button_unchecked,rate_review,record_voice_over,refresh,restart_alt,schedule,school,science,search,search_off,security,sell,send,shield,shield_person,signature,smart_toy,source,star,start,step,support_agent,swap_horiz,switch,task,task_alt,terminal,theater_comedy,timer,timer_off,token,tooltip,translate,trending_down,trending_up,tune,upload_file,verified,verified_user,view_agenda,view_list,visibility,visibility_off,warning,web,wifi_off,workspace_premium&display=block"
       rel="stylesheet"
     />
-    <title>SimulaEdu</title>
+    <!-- SEO base: lo leen los buscadores y las redes sociales (que no ejecutan JS). useSeo los
+         ajusta por ruta. __SITE_URL__ lo reemplaza el plugin vite/seo.ts con VITE_SITE_URL. -->
+    <title>SimulaEdu | Simulacros de examen de admisión universitaria en Perú</title>
+    <meta
+      name="description"
+      content="Practica con simulacros de admisión que siguen el reglamento de calificación de cada universidad del Perú. Mide tu puntaje, revisa tus errores y mejora curso por curso."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#4f46e5" />
+    <link rel="canonical" href="__SITE_URL__/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SimulaEdu" />
+    <meta property="og:locale" content="es_PE" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:title" content="SimulaEdu | Simulacros de examen de admisión universitaria en Perú" />
+    <meta
+      property="og:description"
+      content="Practica con simulacros de admisión que siguen el reglamento de calificación de cada universidad del Perú. Mide tu puntaje, revisa tus errores y mejora curso por curso."
+    />
+    <meta property="og:image" content="__SITE_URL__/logo_simulaedu.png" />
+    <meta property="og:image:width" content="728" />
+    <meta property="og:image:height" content="216" />
+    <meta property="og:image:alt" content="SimulaEdu" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="SimulaEdu | Simulacros de examen de admisión universitaria en Perú" />
+    <meta
+      name="twitter:description"
+      content="Practica con simulacros de admisión que siguen el reglamento de calificación de cada universidad del Perú. Mide tu puntaje, revisa tus errores y mejora curso por curso."
+    />
+    <meta name="twitter:image" content="__SITE_URL__/logo_simulaedu.png" />
+    <!-- Nombre y logo del sitio en los resultados de Google. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "EducationalOrganization",
+            "@id": "__SITE_URL__/#organization",
+            "name": "SimulaEdu",
+            "url": "__SITE_URL__/",
+            "logo": { "@type": "ImageObject", "url": "__SITE_URL__/logo_simulaedu.png", "width": 728, "height": 216 },
+            "areaServed": { "@type": "Country", "name": "Perú" }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "__SITE_URL__/#website",
+            "name": "SimulaEdu",
+            "url": "__SITE_URL__/",
+            "inLanguage": "es-PE",
+            "publisher": { "@id": "__SITE_URL__/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

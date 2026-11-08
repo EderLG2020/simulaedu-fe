@@ -33,6 +33,19 @@ Variables (`apps/web/.env`, copiar de `apps/web/.env.example`):
 |---|---|
 | `VITE_API_URL` | `http://localhost:8085/api/v1` |
 | `VITE_GOOGLE_CLIENT_ID` | Client ID OAuth de Google (login social) |
+| `VITE_SITE_URL` | Dominio público para canonical, Open Graph, `robots.txt` y `sitemap.xml` (`https://simulaedu.pe` en prod; sin ella se usa `http://localhost:5177`) |
+
+## SEO
+
+- `apps/web/vite/seo.ts` (plugin de Vite) genera `robots.txt` y `sitemap.xml` en `pnpm build` (en `pnpm dev` los sirve
+  en `/robots.txt` y `/sitemap.xml`) y reemplaza `__SITE_URL__` en `index.html`. El robots bloquea las rutas con sesión y
+  declara también el `/sitemap.xml` del backend, que lista las páginas de la landing publicadas desde el panel.
+- `index.html` trae las metaetiquetas base (título, description, canonical, Open Graph, Twitter Card) y el JSON-LD
+  del sitio: las redes sociales no ejecutan JS.
+- Cada página pública fija las suyas con `useSeo` (`shared/hooks/useSeo.ts`); las de un solo uso (verificar correo,
+  restablecer contraseña...) llevan `noindex: true`. Una página pública nueva usa `useSeo` y, si debe indexarse, se
+  agrega a `PAGINAS_PUBLICAS` en `vite/seo.ts`; una ruta privada nueva va en `RUTAS_PRIVADAS`.
+- Detalle y pendientes en `simulaedu-be/docs/02-arquitectura.md` sección 9.5.
 
 ## Scripts
 

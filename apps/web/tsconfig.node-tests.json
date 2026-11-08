@@ -15,5 +15,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src/app/architecture.test.ts", "src/app/featureBoundaries.test.ts"]
+  "include": ["src/app/architecture.test.ts", "src/app/featureBoundaries.test.ts", "vite/seo.test.ts"]
 }

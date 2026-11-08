@@ -6,10 +6,12 @@ import { reenviarVerificacion, verificarEmail } from '../../../shared/api/authAp
 import AuthShell from '../components/AuthShell'
 import { card, input, inputIcon, label, primaryBtn } from '../lib/authStyles'
 import { Icon } from '../../../shared/components/ui'
+import { useSeo } from '../../../shared/hooks/useSeo'
 
 type Estado = 'verificando' | 'ok' | 'error'
 
 export default function VerificarEmailPage() {
+  useSeo({ titulo: 'Verifica tu correo', ruta: '/verificar-email', noindex: true })
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
   const [email, setEmail] = useState('')

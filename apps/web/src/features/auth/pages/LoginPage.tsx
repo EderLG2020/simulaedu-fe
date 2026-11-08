@@ -7,6 +7,7 @@ import AuthShell from '../components/AuthShell'
 import { blockedBtn, card, errorBanner, input, inputIcon, label, primaryBtn } from '../lib/authStyles'
 import { redirigirAGoogle } from '../lib/googleAuth'
 import { Icon } from '../../../shared/components/ui'
+import { useSeo } from '../../../shared/hooks/useSeo'
 
 const MENSAJES_POR_CODIGO: Record<string, string> = {
   CREDENCIALES_INVALIDAS: 'Correo o contrasena incorrectos.',
@@ -14,6 +15,7 @@ const MENSAJES_POR_CODIGO: Record<string, string> = {
 }
 
 export default function LoginPage() {
+  useSeo({ titulo: 'Ingresar', descripcion: 'Ingresa a SimulaEdu y sigue practicando con simulacros de admisión de tu universidad objetivo.', ruta: '/login' })
   const navigate = useNavigate()
   const { setSesion } = useAuth()
   const [email, setEmail] = useState('')

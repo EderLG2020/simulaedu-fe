@@ -12,4 +12,6 @@ export interface Usuario {
   planIncluyeProgramas?: boolean | null
   /** Foto de perfil (Cloudinary); null = se muestran las iniciales. */
   fotoUrl?: string | null
+  /** Institución (colegio o academia) a la que pertenece; null si no pertenece a ninguna. */
+  institucionId?: string | null
 }

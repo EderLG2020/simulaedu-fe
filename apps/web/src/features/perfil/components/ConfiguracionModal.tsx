@@ -1,18 +1,25 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { claves } from '../../../shared/api/claves'
 import { mensajeDeError } from '../../../shared/api/client'
-import { actualizarPerfil, cambiarPassword, subirFotoPerfil } from '../../../shared/api/usuariosApi'
+import { actualizarPerfil, cambiarPassword, subirFotoPerfil, unirseAInstitucion } from '../../../shared/api/usuariosApi'
 import Avatar from '../../../shared/components/Avatar'
 import { Alert, Button, cn, Field, Icon, Input, Modal } from '../../../shared/components/ui'
 import { useAuth } from '../../../shared/hooks/useAuth'
 
 /** Configuracion de la cuenta (cualquier rol): se abre desde el menu del usuario. */
 
-type Seccion = 'PERFIL' | 'SEGURIDAD'
+type Seccion = 'PERFIL' | 'SEGURIDAD' | 'INSTITUCION'
 
 const SECCIONES: { valor: Seccion; label: string; icono: string; descripcion: string }[] = [
   { valor: 'PERFIL', label: 'Perfil', icono: 'person', descripcion: 'Nombre y foto' },
   { valor: 'SEGURIDAD', label: 'Seguridad', icono: 'lock', descripcion: 'Contraseña' },
 ]
+
+const SECCION_INSTITUCION = { valor: 'INSTITUCION' as const, label: 'Institución', icono: 'apartment', descripcion: 'Colegio o academia' }
+
+/** Solo alumnos y docentes se unen a una institucion, con el codigo que les da su coordinador. */
+const ROLES_CON_INSTITUCION = ['ESTUDIANTE', 'DOCENTE']
 
 const TIPOS_FOTO = ['image/png', 'image/jpeg', 'image/webp']
 const MAX_BYTES_FOTO = 3 * 1024 * 1024
@@ -191,14 +198,80 @@ function SeccionSeguridad() {
   )
 }
 
+function SeccionInstitucion() {
+  const { usuario, actualizarUsuario } = useAuth()
+  const queryClient = useQueryClient()
+  const [codigo, setCodigo] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [uniendo, setUniendo] = useState(false)
+
+  if (!usuario) return null
+
+  async function unirse(evento: FormEvent) {
+    evento.preventDefault()
+    if (!usuario) return
+    setError(null)
+    setUniendo(true)
+    try {
+      const actualizado = await unirseAInstitucion(codigo.trim().toUpperCase())
+      actualizarUsuario({ ...usuario, ...actualizado })
+      // El plan y los rankings disponibles pueden cambiar al entrar a la institucion.
+      void queryClient.invalidateQueries({ queryKey: claves.perfil })
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo unir a la institución.'))
+    } finally {
+      setUniendo(false)
+    }
+  }
+
+  if (usuario.institucionId) {
+    return (
+      <Alert tone="success">
+        Ya perteneces a una institución. {usuario.rol === 'DOCENTE' ? 'Tu coordinador puede ponerte a cargo de sus secciones.' : 'Ahora puedes ver el ranking de tu institución.'}
+      </Alert>
+    )
+  }
+
+  return (
+    <form onSubmit={unirse} className="flex flex-col gap-4">
+      <div>
+        <h3 className="font-display text-base font-semibold text-slate-900">Unirme a una institución</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Si tu colegio o academia usa SimulaEdu, pide a tu coordinador el código de invitación e ingrésalo aquí.
+        </p>
+      </div>
+      {error && <Alert>{error}</Alert>}
+      <Field label="Código de invitación" hint="8 caracteres, por ejemplo DEMO2026.">
+        <Input
+          value={codigo}
+          maxLength={8}
+          autoComplete="off"
+          className="tracking-widest uppercase"
+          onChange={(e) => setCodigo(e.target.value)}
+          required
+        />
+      </Field>
+      <div className="flex justify-end">
+        <Button type="submit" icon="apartment" loading={uniendo} disabled={!codigo.trim()}>
+          Unirme
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 export default function ConfiguracionModal({ onCerrar }: { onCerrar: () => void }) {
+  const { usuario } = useAuth()
   const [seccion, setSeccion] = useState<Seccion>('PERFIL')
+  // Se decide al abrir: tras unirse, la pestaña sigue visible para mostrar la confirmacion.
+  const [conInstitucion] = useState(() => !!usuario && ROLES_CON_INSTITUCION.includes(usuario.rol) && !usuario.institucionId)
+  const secciones = conInstitucion ? [...SECCIONES, SECCION_INSTITUCION] : SECCIONES
 
   return (
     <Modal title="Configuración" icon="tune" onClose={onCerrar}>
       <div className="flex flex-col gap-5 sm:flex-row">
         <nav className="flex shrink-0 gap-1 sm:w-48 sm:flex-col" aria-label="Secciones de configuración">
-          {SECCIONES.map((s) => {
+          {secciones.map((s) => {
             const activa = s.valor === seccion
             return (
               <button
@@ -221,7 +294,9 @@ export default function ConfiguracionModal({ onCerrar }: { onCerrar: () => void 
             )
           })}
         </nav>
-        <div className="min-w-0 flex-1">{seccion === 'PERFIL' ? <SeccionPerfil /> : <SeccionSeguridad />}</div>
+        <div className="min-w-0 flex-1">
+          {seccion === 'PERFIL' ? <SeccionPerfil /> : seccion === 'SEGURIDAD' ? <SeccionSeguridad /> : <SeccionInstitucion />}
+        </div>
       </div>
     </Modal>
   )

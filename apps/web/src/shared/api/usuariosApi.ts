@@ -23,6 +23,14 @@ export function cambiarPassword(passwordActual: string, passwordNueva: string): 
   return apiFetch<void>('/usuarios/me/password', { method: 'PUT', body: JSON.stringify({ passwordActual, passwordNueva }) })
 }
 
+/**
+ * Modal de configuracion > Institucion: un estudiante o docente sin institucion se une con el
+ * codigo de invitacion que le da su coordinador. Devuelve el perfil ya con `institucionId`.
+ */
+export function unirseAInstitucion(codigo: string): Promise<Usuario> {
+  return apiFetch<Usuario>('/usuarios/me/institucion', { method: 'PUT', body: JSON.stringify({ codigo }) })
+}
+
 interface FirmaSubida {
   urlSubida: string
   apiKey: string

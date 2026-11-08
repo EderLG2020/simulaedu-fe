@@ -5,6 +5,7 @@ import { reenviarVerificacion, register } from '../../../shared/api/authApi'
 import AuthShell from '../components/AuthShell'
 import { card, input, inputIcon, label, primaryBtn } from '../lib/authStyles'
 import { Icon } from '../../../shared/components/ui'
+import { useSeo } from '../../../shared/hooks/useSeo'
 
 function calcularFortaleza(valor: string): 0 | 1 | 2 | 3 {
   if (!valor) return 0
@@ -23,6 +24,7 @@ const FORTALEZA_INFO: Record<0 | 1 | 2 | 3, { texto: string; color: string; segm
 }
 
 export default function RegisterPage() {
+  useSeo({ titulo: 'Crea tu cuenta gratis', descripcion: 'Regístrate gratis en SimulaEdu y rinde simulacros de admisión con el reglamento de calificación de tu universidad. Sin tarjeta de crédito.', ruta: '/registro' })
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

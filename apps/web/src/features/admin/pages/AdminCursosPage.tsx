@@ -14,6 +14,8 @@ import {
 } from '../api/adminCursosApi'
 import { claves } from '../../../shared/api/claves'
 import { mensajeDeError } from '../../../shared/api/client'
+import BotonTraducir from '../../../shared/components/BotonTraducir'
+import { useTraducirCampo } from '../hooks/useTraducirCampo'
 import { Alert, Badge, Button, Card, cn, EmptyState, Field, FieldGroup, Icon, Input, PageHeader, SegmentedControl, Select, StatCard, type TonoBadge } from '../../../shared/components/ui'
 import { plural } from '../../../shared/lib/formato'
 import { ICONO_CURSO_POR_DEFECTO, ICONOS_CURSO, iconoDeCurso } from '../../../shared/lib/iconosCurso'
@@ -70,6 +72,7 @@ export default function AdminCursosPage() {
   const [nuevoTema, setNuevoTema] = useState('')
   const [temaEnEdicion, setTemaEnEdicion] = useState<{ id: string; nombre: string } | null>(null)
   const [temaOcupado, setTemaOcupado] = useState<string | null>(null)
+  const traduccion = useTraducirCampo(setErrorPanel)
 
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -320,9 +323,20 @@ export default function AdminCursosPage() {
                   <form onSubmit={handleGuardarCurso} className="flex flex-col gap-4 p-5">
                     {errorPanel && <Alert>{errorPanel}</Alert>}
 
-                    <Field label="Nombre del curso">
-                      <Input value={formulario.nombre} maxLength={255} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} required />
-                    </Field>
+                    {/* El boton va fuera del <label> de Field: dentro, "EN ES" se sumaria al nombre accesible del input. */}
+                    <div className="flex items-end gap-2">
+                      <Field label="Nombre del curso" className="flex-1">
+                        <Input value={formulario.nombre} maxLength={255} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} required />
+                      </Field>
+                      <div className="flex h-10 items-center">
+                        <BotonTraducir
+                          que="el nombre del curso"
+                          traduciendo={traduccion.traduciendo('curso')}
+                          disabled={guardando || !formulario.nombre.trim() || (traduccion.ocupado && !traduccion.traduciendo('curso'))}
+                          onTraducir={(destino) => traduccion.traducir('curso', formulario.nombre, destino, (nombre) => setFormulario((f) => ({ ...f, nombre })))}
+                        />
+                      </div>
+                    </div>
 
                     <Field label="Categoría" hint="Común, Letras y Ciencias son de admisión; Idiomas y Tecnología, de esos programas.">
                       <SegmentedControl
@@ -406,6 +420,14 @@ export default function AdminCursosPage() {
                                       onChange={(e) => setTemaEnEdicion({ ...temaEnEdicion, nombre: e.target.value })}
                                       required
                                     />
+                                    <BotonTraducir
+                                      que="el tema"
+                                      traduciendo={traduccion.traduciendo(tema.id)}
+                                      disabled={ocupado || !temaEnEdicion.nombre.trim() || (traduccion.ocupado && !traduccion.traduciendo(tema.id))}
+                                      onTraducir={(destino) =>
+                                        traduccion.traducir(tema.id, temaEnEdicion.nombre, destino, (nombre) => setTemaEnEdicion((t) => (t ? { ...t, nombre } : t)))
+                                      }
+                                    />
                                     <Button type="submit" size="sm" loading={ocupado}>
                                       Guardar
                                     </Button>
@@ -454,6 +476,12 @@ export default function AdminCursosPage() {
                           maxLength={255}
                           value={nuevoTema}
                           onChange={(e) => setNuevoTema(e.target.value)}
+                        />
+                        <BotonTraducir
+                          que="el nuevo tema"
+                          traduciendo={traduccion.traduciendo('nuevo-tema')}
+                          disabled={!nuevoTema.trim() || (traduccion.ocupado && !traduccion.traduciendo('nuevo-tema'))}
+                          onTraducir={(destino) => traduccion.traducir('nuevo-tema', nuevoTema, destino, setNuevoTema)}
                         />
                         <Button type="submit" variant="secondary" icon="add" loading={temaOcupado === 'nuevo'} disabled={!nuevoTema.trim()}>
                           Agregar

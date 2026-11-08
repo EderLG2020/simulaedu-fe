@@ -5,7 +5,17 @@ import RutaPorRol from './routes/RutaPorRol'
 import RutaProtegida from './routes/RutaProtegida'
 import { AdminLayout, cargarAdminCursosPage, cargarAdminDashboardPage, cargarAdminInstitucionesPage, cargarAdminPlanesPage, cargarAdminReportesGlobalesPage, cargarAdminUniversidadesPage, cargarAdminUsuariosPage, cargarModeracionPreguntasPage } from '../features/admin'
 import { cargarGoogleCallbackPage, cargarLoginPage, cargarRecuperarPasswordPage, cargarRegisterPage, cargarRestablecerPasswordPage, cargarVerificarEmailPage } from '../features/auth'
-import { cargarCoordinadorPage, CoordinadorLayout } from '../features/coordinador'
+import {
+  cargarCoordinadorAlumnoDetallePage,
+  cargarCoordinadorAlumnosPage,
+  cargarCoordinadorDocentesPage,
+  cargarCoordinadorRankingPage,
+  cargarCoordinadorReportesPage,
+  cargarCoordinadorResumenPage,
+  cargarCoordinadorSeccionDetallePage,
+  cargarCoordinadorSeccionesPage,
+  CoordinadorLayout,
+} from '../features/coordinador'
 import { cargarExamenEstadisticasPage, cargarGrupoDetallePage, cargarGrupoEstadisticasPage, cargarGruposPage, cargarRevisionesPage, DocenteLayout } from '../features/docente'
 import { cargarAsignaturasExamenesPage, cargarEditorExamenPage, cargarEligeUniversidadPage, cargarGestionExamenesPage } from '../features/examenes'
 import { cargarEstudianteHomePage } from '../features/home'
@@ -56,7 +66,14 @@ export const router = createBrowserRouter([
           {
             element: <CoordinadorLayout />,
             children: [
-              { path: '/coordinador', lazy: pagina(cargarCoordinadorPage) },
+              { path: '/coordinador', lazy: pagina(cargarCoordinadorResumenPage) },
+              { path: '/coordinador/alumnos', lazy: pagina(cargarCoordinadorAlumnosPage) },
+              { path: '/coordinador/alumnos/:id', lazy: pagina(cargarCoordinadorAlumnoDetallePage) },
+              { path: '/coordinador/secciones', lazy: pagina(cargarCoordinadorSeccionesPage) },
+              { path: '/coordinador/secciones/:id', lazy: pagina(cargarCoordinadorSeccionDetallePage) },
+              { path: '/coordinador/docentes', lazy: pagina(cargarCoordinadorDocentesPage) },
+              { path: '/coordinador/ranking', lazy: pagina(cargarCoordinadorRankingPage) },
+              { path: '/coordinador/reportes', lazy: pagina(cargarCoordinadorReportesPage) },
               { path: '/coordinador/notificaciones', lazy: pagina(cargarNotificacionesPage) },
             ],
           },

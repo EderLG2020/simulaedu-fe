@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   listar: vi.fn(),
   actualizar: vi.fn(),
   crear: vi.fn(),
+  traducir: vi.fn(),
 }))
 
 vi.mock('../api/adminCursosApi', () => ({
@@ -21,6 +22,8 @@ vi.mock('../api/adminCursosApi', () => ({
   actualizarTema: vi.fn(),
   eliminarTema: vi.fn(),
 }))
+
+vi.mock('../../../shared/api/traduccionApi', () => ({ traducirTextos: (...args: unknown[]) => mocks.traducir(...args) }))
 
 // jsdom no implementa matchMedia (la pagina lo usa para llevar el panel a la vista en pantallas angostas).
 beforeEach(() => {
@@ -60,5 +63,37 @@ describe('AdminCursosPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear curso' }))
 
     await waitFor(() => expect(mocks.crear).toHaveBeenCalledWith({ nombre: 'Logica', categoria: 'COMUN', icono: 'auto_stories' }))
+  })
+})
+
+describe('AdminCursosPage: traducir', () => {
+  it('traduce el nombre del curso al ingles y se guarda al confirmar', async () => {
+    mocks.listar.mockResolvedValue([FISICA])
+    mocks.traducir.mockResolvedValue(['Physics'])
+    mocks.actualizar.mockResolvedValue({ ...FISICA, nombre: 'Physics' })
+    renderConQuery(<AdminCursosPage />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /Fisica/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Traducir el nombre del curso al inglés' }))
+
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Nombre del curso' })).toHaveValue('Physics'))
+    expect(mocks.traducir).toHaveBeenCalledWith(['Fisica'], 'EN')
+    expect(mocks.actualizar).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(mocks.actualizar).toHaveBeenCalledWith('c-fis', { nombre: 'Physics', categoria: 'CIENCIAS', icono: 'science' }))
+  })
+
+  it('si DeepL falla muestra el error y deja el nombre como estaba', async () => {
+    const { ApiError } = await import('../../../shared/api/client')
+    mocks.listar.mockResolvedValue([FISICA])
+    mocks.traducir.mockRejectedValue(new ApiError('CUOTA_TRADUCCION_AGOTADA', 'Se agoto la cuota mensual de traduccion automatica.', []))
+    renderConQuery(<AdminCursosPage />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /Fisica/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Traducir el nombre del curso al español' }))
+
+    expect(await screen.findByText('Se agoto la cuota mensual de traduccion automatica.')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Nombre del curso' })).toHaveValue('Fisica')
   })
 })
